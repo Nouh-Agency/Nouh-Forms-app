@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Changa:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.cdnfonts.com/css/dolce-vita');
+@import url('https://db.onlinewebfonts.com/c/79e4dc6a81171b1523795cb6b2bc7b2f?family=Avenir+LT+Pro+85+Heavy');
+
+@import "tailwindcss";
+
+:root {
+  --color-bg-primary: #080808;
+  --color-brand-gold: #c5a059;
+  --color-brand-gold-light: #d4b06a;
+  --color-brand-highlight: #f5d38c;
+  --font-display: 'Dolce Vita', sans-serif;
+  --font-arabic: 'Changa', sans-serif;
+  --font-body: 'Dolce Vita', sans-serif;
+  --font-modern-arabic: 'ArabicModern', 'ArabicModern-Bold', sans-serif;
+}
+
+@theme {
+  --color-bg-primary: #080808;
+  --color-brand-gold: #c5a059;
+  --color-brand-gold-light: #d4b06a;
+  --color-brand-highlight: #f5d38c;
+  --font-display: 'Dolce Vita', sans-serif;
+  --font-arabic: 'Changa', sans-serif;
+  --font-body: 'Dolce Vita', sans-serif;
+  --font-modern-arabic: 'ArabicModern', 'ArabicModern-Bold', sans-serif;
+}
+
+@font-face {
+  font-family: 'Dolce Vita';
+  src: local('Dolce Vita'), local('DolceVita'),
+       url('https://fonts.cdnfonts.com/s/14878/Dolce Vita.woff') format('woff');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ArabicModern';
+  src: local('ArabicModern'), local('Arabic Modern'),
+       url('https://arbfonts.com/wp-content/fonts/new-arabic-fonts/18728-arabicmodern-bold.otf') format('opentype');
+  font-display: swap;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-arabic {
+  font-family: var(--font-arabic);
+}
+
+.font-modern-arabic {
+  font-family: var(--font-modern-arabic);
+}
+
+body {
+  background-color: #080808;
+  color: #ffffff;
+  font-family: 'Dolce Vita', sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body[dir="ltr"],
+[dir="ltr"],
+[dir="ltr"] .font-display,
+[dir="ltr"] .font-body {
+  font-family: 'Dolce Vita', sans-serif;
+}
+
+body[dir="rtl"],
+[dir="rtl"],
+[dir="rtl"] *,
+[dir="rtl"] .font-display,
+[dir="rtl"] .font-body,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] p,
+[dir="rtl"] span,
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] textarea {
+  font-family: 'Changa', sans-serif !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(197, 160, 89, 0.35);
+  color: #ffffff;
+}
+
+input, textarea, button {
+  font-family: inherit;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #111111 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  header,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
