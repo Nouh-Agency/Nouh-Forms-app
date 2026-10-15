@@ -1,6 +1,5 @@
 import { useState, type Dispatch, type SetStateAction } from 'react'
 import type { BriefDisciplineConfig, ClientBasicInfo } from '../types/startProject.types'
-import { generateClientDossierPdf } from '../utils/pdfGenerator'
 import { ArrowUpRightIcon } from './Icons'
 
 interface SummaryStepProps {
@@ -21,39 +20,17 @@ export default function SummaryStep({
   isRTL = false,
   onSaveProject,
 }: SummaryStepProps) {
-  const [isExporting, setIsExporting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  const handleDownloadPdf = async () => {
+  const handleProceed = async () => {
     try {
-      setIsExporting(true)
+      setIsSubmitting(true)
       setErrorMessage(null)
-      setSuccessMessage(null)
 
       if (onSaveProject) {
         await onSaveProject()
       }
-
-      const pdfBlob = await generateClientDossierPdf(config, answers, clientInfo, isRTL)
-      const fileName = clientInfo.name.trim()
-        ? `${isRTL ? 'ملف العميل' : 'Client Dossier'} - ${clientInfo.name.trim()}.pdf`
-        : `${isRTL ? 'ملف العميل' : 'Client Dossier'}.pdf`
-
-      const downloadUrl = URL.createObjectURL(pdfBlob)
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(downloadUrl)
-
-      setSuccessMessage(
-        isRTL
-          ? 'تم حفظ المشروع وتصدير ملف العميل بنجاح!'
-          : 'Project saved and dossier exported successfully!'
-      )
     } catch {
       setErrorMessage(
         isRTL
@@ -61,7 +38,7 @@ export default function SummaryStep({
           : 'Failed to save project to server, please try again.'
       )
     } finally {
-      setIsExporting(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -151,7 +128,7 @@ export default function SummaryStep({
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            handleDownloadPdf()
+            handleProceed()
           }}
           className="lg:pt-2"
         >
@@ -168,7 +145,7 @@ export default function SummaryStep({
               value={clientInfo.note}
               onChange={(e) => setClientInfo((prev) => ({ ...prev, note: e.target.value }))}
               placeholder={isRTL ? 'أي تفاصيل عن المساحة، الاشتراطات أو الأفكار الإضافية...' : 'Any extra architectural guidelines, budget limits or details...'}
-              className="w-full resize-none bg-transparent border-0 border-b border-white/15 focus:border-[#C5A059] outline-none text-white/80 pb-3 placeholder:text-white/15 transition-colors font-light text-[13px] leading-[1.8] font-display"
+              className="w-full resize-none bg-[#0a0a0a] border border-white/15 focus:border-[#C5A059] outline-none text-white/80 p-3.5 placeholder:text-white/15 transition-colors font-light text-[13px] leading-[1.8] font-display"
             />
           </label>
 
@@ -178,17 +155,11 @@ export default function SummaryStep({
             </div>
           )}
 
-          {successMessage && (
-            <div className="mb-6 p-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-display">
-              {successMessage}
-            </div>
-          )}
-
           <button
             type="submit"
-            disabled={isExporting}
+            disabled={isSubmitting}
             className="group w-full bg-transparent border-0 p-0 flex items-center justify-between gap-6 cursor-pointer"
-            style={{ cursor: isExporting ? 'wait' : 'pointer' }}
+            style={{ cursor: isSubmitting ? 'wait' : 'pointer' }}
           >
             <span
               className="font-bold transition-colors font-display text-white group-hover:text-[#C5A059]"
@@ -197,13 +168,13 @@ export default function SummaryStep({
                 lineHeight: 1,
               }}
             >
-              {isExporting
+              {isSubmitting
                 ? isRTL
-                  ? 'جاري تصدير الملف...'
-                  : 'GENERATING PDF...'
+                  ? 'جاري الانتقال...'
+                  : 'PROCEEDING...'
                 : isRTL
-                  ? 'حفظ وتصدير ملف العميل (PDF)'
-                  : 'SAVE & EXPORT DOSSIER (PDF)'}
+                  ? 'تم اختيار المشروع , الانتقال للاسئلة'
+                  : 'Project Selected, Proceed to Questions'}
             </span>
             <div className="flex-1 h-px transition-colors bg-[#C5A059]/65" />
             <ArrowUpRightIcon

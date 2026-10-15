@@ -47,6 +47,7 @@ export interface QuestionnaireValidationRules {
   numeric?: boolean
   email?: boolean
   step?: number | string
+  format?: string
   rows?: string[]
   columns?: string[]
   [key: string]: unknown

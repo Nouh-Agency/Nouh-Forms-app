@@ -15,6 +15,7 @@ interface ParsedValidationRules {
   numeric?: boolean
   email?: boolean
   step?: number | string
+  format?: string
   rows?: string[]
   columns?: string[]
 }
@@ -88,7 +89,7 @@ export default function QuestionnaireStep({
     if (name.includes('نعم') || name.includes('لا') || code === 'boolean' || code === 'yes_no') {
       return 'yes_no'
     }
-    if (name.includes('مدة') || name.includes('رينج') || code === 'duration' || code === 'date_range' || code === 'datetime_range') {
+    if (code === 'date_range' || code === 'datetime_range' || name.includes('رينج')) {
       return 'duration'
     }
     if (name.includes('مقياس') || code === 'linear_scale' || code === 'scale') {
@@ -97,7 +98,14 @@ export default function QuestionnaireStep({
     if (name.includes('تاريخ') || code === 'date') {
       return 'date'
     }
-    if (name.includes('توقيت') || name.includes('وقت') || code === 'time') {
+    if (
+      name.includes('توقيت') ||
+      name.includes('وقت') ||
+      name.includes('مدة') ||
+      code === 'time' ||
+      code === 'duration' ||
+      Boolean(rules && typeof rules.format === 'string' && (rules.format.includes('HH') || rules.format.includes('H:')))
+    ) {
       return 'time'
     }
     if (name.includes('رقم') || code === 'number' || code === 'numeric' || code === 'integer') {
@@ -171,6 +179,7 @@ export default function QuestionnaireStep({
         else if (item.startsWith('min:')) result.min = Number(item.replace('min:', ''))
         else if (item.startsWith('max:')) result.max = Number(item.replace('max:', ''))
         else if (item.startsWith('regex:')) result.pattern = item.replace('regex:', '')
+        else if (item.startsWith('format:')) result.format = item.replace('format:', '').trim()
       })
       return result
     }
@@ -185,6 +194,7 @@ export default function QuestionnaireStep({
           else if (item.startsWith('min:')) result.min = Number(item.replace('min:', ''))
           else if (item.startsWith('max:')) result.max = Number(item.replace('max:', ''))
           else if (item.startsWith('regex:')) result.pattern = item.replace('regex:', '')
+          else if (item.startsWith('format:')) result.format = item.replace('format:', '').trim()
         }
       })
       return result
@@ -204,6 +214,7 @@ export default function QuestionnaireStep({
       if (rec.numeric !== undefined) result.numeric = Boolean(rec.numeric)
       if (rec.email !== undefined) result.email = Boolean(rec.email)
       if (rec.step !== undefined && rec.step !== null) result.step = typeof rec.step === 'number' ? rec.step : String(rec.step)
+      if (rec.format !== undefined && rec.format !== null) result.format = String(rec.format)
       if (Array.isArray(rec.rows)) {
         result.rows = rec.rows.map(String)
       }
@@ -336,6 +347,23 @@ export default function QuestionnaireStep({
             return isRTL ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Please enter a valid email address'
           }
         }
+      } else if (fieldType === 'time') {
+        const timeStr = String(val).trim()
+        if (rules.format) {
+          const upperFormat = rules.format.toUpperCase()
+          if (upperFormat.includes('SS')) {
+            const timeWithSecondsRegex = /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/
+            const timeWithoutSecondsRegex = /^([01]\d|2[0-3]):[0-5]\d$/
+            if (!timeWithSecondsRegex.test(timeStr) && !timeWithoutSecondsRegex.test(timeStr)) {
+              return isRTL ? 'صيغة الوقت يجب أن تكون HH:MM:SS' : 'Time format must be HH:MM:SS'
+            }
+          } else if (upperFormat.includes('HH:MM')) {
+            const timeRegex = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/
+            if (!timeRegex.test(timeStr)) {
+              return isRTL ? 'صيغة الوقت يجب أن تكون HH:MM' : 'Time format must be HH:MM'
+            }
+          }
+        }
       }
     }
 
@@ -362,14 +390,62 @@ export default function QuestionnaireStep({
     }
   }
 
-  const handleFileChange = (question: QuestionnaireQuestion, files: File[]) => {
-    setFileAnswers((prev) => ({ ...prev, [question.id]: files }))
+  const handleAddFiles = (question: QuestionnaireQuestion, newFiles: File[]) => {
+    if (!newFiles || newFiles.length === 0) return
+    const current = fileAnswers[question.id] || []
+    const existingSignatures = new Set(
+      current.map((f) => `${f.name}-${f.size}-${f.lastModified}`)
+    )
+    const uniqueNew = newFiles.filter(
+      (f) => !existingSignatures.has(`${f.name}-${f.size}-${f.lastModified}`)
+    )
+    const updated = [...current, ...uniqueNew]
+
+    setFileAnswers((prev) => ({ ...prev, [question.id]: updated }))
     setAnswers((prev) => ({
       ...prev,
-      [question.id]: files.map((f) => f.name).join(', '),
+      [question.id]: updated.map((f) => f.name).join(', '),
     }))
 
-    const error = validateQuestion(question, files.length > 0 ? files : null)
+    const error = validateQuestion(question, updated.length > 0 ? updated : null)
+    setValidationErrors((prev) => {
+      const next = { ...prev }
+      if (error) {
+        next[question.id] = error
+      } else {
+        delete next[question.id]
+      }
+      return next
+    })
+  }
+
+  const handleRemoveFile = (question: QuestionnaireQuestion, indexToRemove: number) => {
+    const current = fileAnswers[question.id] || []
+    const updated = current.filter((_, idx) => idx !== indexToRemove)
+
+    setFileAnswers((prev) => ({ ...prev, [question.id]: updated }))
+    setAnswers((prev) => ({
+      ...prev,
+      [question.id]: updated.length > 0 ? updated.map((f) => f.name).join(', ') : '',
+    }))
+
+    const error = validateQuestion(question, updated.length > 0 ? updated : null)
+    setValidationErrors((prev) => {
+      const next = { ...prev }
+      if (error) {
+        next[question.id] = error
+      } else {
+        delete next[question.id]
+      }
+      return next
+    })
+  }
+
+  const handleClearAllFiles = (question: QuestionnaireQuestion) => {
+    setFileAnswers((prev) => ({ ...prev, [question.id]: [] }))
+    setAnswers((prev) => ({ ...prev, [question.id]: '' }))
+
+    const error = validateQuestion(question, null)
     setValidationErrors((prev) => {
       const next = { ...prev }
       if (error) {
@@ -631,6 +707,25 @@ export default function QuestionnaireStep({
           } else if (val !== undefined && val !== null && val !== '') {
             formattedAnswers[String(q.id)] = String(val)
           }
+        } else if (fieldType === 'time') {
+          if (val !== undefined && val !== null && val !== '') {
+            let timeStr = String(val).trim()
+            if (rules.format?.toUpperCase().includes('SS')) {
+              if (/^\d{1,2}:\d{2}$/.test(timeStr)) {
+                timeStr = `${timeStr.padStart(5, '0')}:00`
+              } else if (/^\d{1}:\d{2}:\d{2}$/.test(timeStr)) {
+                timeStr = `0${timeStr}`
+              }
+            } else if (rules.format?.toUpperCase() === 'HH:MM') {
+              if (/^\d{1,2}:\d{2}:\d{2}$/.test(timeStr)) {
+                timeStr = timeStr.slice(0, 5)
+              }
+              if (/^\d{1}:\d{2}$/.test(timeStr)) {
+                timeStr = `0${timeStr}`
+              }
+            }
+            formattedAnswers[String(q.id)] = timeStr
+          }
         } else if (fieldType === 'file') {
           const files = fileAnswers[q.id]
           if (files && files.length > 0) {
@@ -886,6 +981,13 @@ export default function QuestionnaireStep({
                               <input
                                 type="time"
                                 required={isRequired}
+                                step={
+                                  parsedRules.format?.toUpperCase().includes('SS')
+                                    ? '1'
+                                    : parsedRules.step
+                                      ? String(parsedRules.step)
+                                      : undefined
+                                }
                                 min={parsedRules.min ? String(parsedRules.min) : undefined}
                                 max={parsedRules.max ? String(parsedRules.max) : undefined}
                                 value={(answers[q.id] as string) || ''}
@@ -937,7 +1039,7 @@ export default function QuestionnaireStep({
                               placeholder={q.placeholder || (isRTL ? 'أدخل الفقرة النصية هنا...' : 'Enter paragraph text here...')}
                               value={(answers[q.id] as string) || ''}
                               onChange={(e) => handleTextChange(q.id, e.target.value)}
-                              className={`w-full resize-none bg-transparent border-0 border-b outline-none text-white/90 pb-2 placeholder:text-white/20 transition-colors font-light text-[14px] leading-[1.8] font-display ${
+                              className={`w-full resize-none bg-[#0a0a0a] border outline-none text-white/90 p-3.5 placeholder:text-white/20 transition-colors font-light text-[14px] leading-[1.8] font-display ${
                                 hasError ? 'border-red-500' : 'border-white/15 focus:border-[#C5A059]'
                               }`}
                             />
@@ -1063,21 +1165,19 @@ export default function QuestionnaireStep({
                           )}
 
                           {fieldType === 'file' && (
-                            <div className="pt-2">
+                            <div className="pt-2 space-y-3">
                               <label
                                 htmlFor={`file-input-${q.id}`}
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={(e) => {
                                   e.preventDefault()
                                   const fileList = e.dataTransfer.files ? Array.from(e.dataTransfer.files) : []
-                                  handleFileChange(q, fileList)
+                                  handleAddFiles(q, fileList)
                                 }}
                                 className={`relative border border-dashed transition-all cursor-pointer p-6 sm:p-8 flex flex-col items-center justify-center text-center block ${
                                   hasError
                                     ? 'border-red-500/60 bg-red-500/5 hover:border-red-500'
-                                    : fileAnswers[q.id] && fileAnswers[q.id].length > 0
-                                      ? 'border-[#C5A059] bg-[#C5A059]/5'
-                                      : 'border-white/20 bg-[#0a0a0a] hover:border-[#C5A059]/60 hover:bg-white/[0.02]'
+                                    : 'border-white/20 bg-[#0a0a0a] hover:border-[#C5A059]/60 hover:bg-white/[0.02]'
                                 }`}
                               >
                                 <input
@@ -1087,68 +1187,118 @@ export default function QuestionnaireStep({
                                   className="hidden"
                                   accept={
                                     parsedRules.pattern ||
-                                    '.jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf'
+                                    'image/jpeg,image/png,image/webp,image/jpg,application/pdf,.jpg,.jpeg,.png,.webp,.pdf'
                                   }
                                   onChange={(e) => {
                                     const fileList = e.target.files ? Array.from(e.target.files) : []
-                                    handleFileChange(q, fileList)
+                                    handleAddFiles(q, fileList)
+                                    e.target.value = ''
                                   }}
                                 />
 
-                                {fileAnswers[q.id] && fileAnswers[q.id].length > 0 ? (
-                                  <div className="flex flex-col items-center gap-2">
-                                    <div className="w-10 h-10 rounded-full bg-[#C5A059]/20 text-[#C5A059] flex items-center justify-center">
-                                      <CheckIcon className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex flex-col items-center gap-1 max-w-xs sm:max-w-md">
-                                      {fileAnswers[q.id].map((file, idx) => (
-                                        <span key={idx} className="text-white text-xs font-display truncate">
-                                          {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                                        </span>
-                                      ))}
-                                    </div>
+                                <div className="flex flex-col items-center gap-2 pointer-events-none">
+                                  <div className="w-10 h-10 rounded-full bg-white/5 text-white/40 flex items-center justify-center">
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="w-5 h-5"
+                                    >
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                      <polyline points="17 8 12 3 7 8" />
+                                      <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                  </div>
+                                  <span className="text-white/80 text-sm font-display">
+                                    {isRTL ? 'انقر لرفع ملفات أو اسحب الملفات هنا' : 'Click to upload or drag and drop'}
+                                  </span>
+                                  <span className="text-white/35 text-[11px] font-display">
+                                    {isRTL
+                                      ? 'JPG, PNG, WEBP, PDF (الحد الأقصى: 10 ميغابايت لكل ملف)'
+                                      : 'JPG, PNG, WEBP, PDF (Max: 10MB per file)'}
+                                  </span>
+                                </div>
+                              </label>
+
+                              {fileAnswers[q.id] && fileAnswers[q.id].length > 0 && (
+                                <div className="space-y-2 pt-1">
+                                  <div className="flex items-center justify-between px-1">
+                                    <span className="text-white/60 text-xs font-display">
+                                      {isRTL
+                                        ? `الملفات المحددة (${fileAnswers[q.id].length})`
+                                        : `Selected files (${fileAnswers[q.id].length})`}
+                                    </span>
                                     <button
                                       type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault()
-                                        e.stopPropagation()
-                                        handleFileChange(q, [])
-                                        const input = document.getElementById(`file-input-${q.id}`) as HTMLInputElement
-                                        if (input) input.value = ''
-                                      }}
-                                      className="mt-2 text-xs text-red-400 hover:text-red-300 font-display underline cursor-pointer"
+                                      onClick={() => handleClearAllFiles(q)}
+                                      className="text-xs text-red-400 hover:text-red-300 font-display transition-colors cursor-pointer"
                                     >
-                                      {isRTL ? 'إزالة الملفات' : 'Remove files'}
+                                      {isRTL ? 'إزالة الكل' : 'Clear all'}
                                     </button>
                                   </div>
-                                ) : (
-                                  <div className="flex flex-col items-center gap-2 pointer-events-none">
-                                    <div className="w-10 h-10 rounded-full bg-white/5 text-white/40 flex items-center justify-center">
-                                      <svg
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        className="w-5 h-5"
-                                      >
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="17 8 12 3 7 8" />
-                                        <line x1="12" y1="3" x2="12" y2="15" />
-                                      </svg>
-                                    </div>
-                                    <span className="text-white/80 text-sm font-display">
-                                      {isRTL ? 'انقر لرفع ملفات أو اسحب الملفات هنا' : 'Click to upload or drag and drop'}
-                                    </span>
-                                    <span className="text-white/35 text-[11px] font-display">
-                                      {isRTL
-                                        ? 'JPG, PNG, WEBP, PDF (الحد الأقصى: 10 ميغابايت لكل ملف)'
-                                        : 'JPG, PNG, WEBP, PDF (Max: 10MB per file)'}
-                                    </span>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {fileAnswers[q.id].map((file, idx) => {
+                                      const isImg =
+                                        file.type.startsWith('image/') ||
+                                        /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(file.name)
+                                      const sizeFormatted =
+                                        file.size > 1024 * 1024
+                                          ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+                                          : `${Math.round(file.size / 1024)} KB`
+
+                                      return (
+                                        <div
+                                          key={`${file.name}-${idx}`}
+                                          className="flex items-center justify-between p-2.5 bg-[#0e0e0e] border border-white/10 hover:border-white/20 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2.5 min-w-0">
+                                            <span
+                                              className={`px-1.5 py-0.5 text-[10px] font-mono rounded ${
+                                                isImg
+                                                  ? 'bg-[#C5A059]/20 text-[#C5A059]'
+                                                  : 'bg-blue-500/20 text-blue-300'
+                                              }`}
+                                            >
+                                              {isImg ? 'IMG' : 'PDF'}
+                                            </span>
+                                            <div className="min-w-0">
+                                              <p className="text-white/90 text-xs font-display truncate">
+                                                {file.name}
+                                              </p>
+                                              <p className="text-white/35 text-[10px] font-display">
+                                                {sizeFormatted}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveFile(q, idx)}
+                                            className="text-white/30 hover:text-red-400 p-1 transition-colors cursor-pointer shrink-0 mr-1"
+                                            aria-label={isRTL ? 'إزالة الملف' : 'Remove file'}
+                                          >
+                                            <svg
+                                              viewBox="0 0 24 24"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              strokeWidth="2"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              className="w-4 h-4"
+                                            >
+                                              <line x1="18" y1="6" x2="6" y2="18" />
+                                              <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      )
+                                    })}
                                   </div>
-                                )}
-                              </label>
+                                </div>
+                              )}
                             </div>
                           )}
 
