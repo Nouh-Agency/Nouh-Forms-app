@@ -63,10 +63,11 @@ export async function generateClientDossierPdf(
   ctx.fillRect(margin, 165, contentWidth, 110)
   ctx.strokeRect(margin, 165, contentWidth, 110)
 
-  const colW = contentWidth / 3
+  const colW = contentWidth / 4
   const infoItems = [
     { label: isRTL ? 'اسم العميل' : 'CLIENT NAME', value: clientInfo.name || '—' },
     { label: isRTL ? 'رقم الهاتف' : 'PHONE NUMBER', value: clientInfo.phone || '—' },
+    { label: isRTL ? 'البريد الإلكتروني' : 'EMAIL', value: clientInfo.email || '—' },
     { label: isRTL ? 'العنوان / الموقع' : 'LOCATION', value: clientInfo.address || '—' },
   ]
 
@@ -115,10 +116,23 @@ export async function generateClientDossierPdf(
 
   currentY += 44
 
+  const maxQuestionWidth = qColW - 40
+  const maxOptionsWidth = contentWidth - qColW - 40
+
   const filteredQuestions = config.questions.filter((q) => q.mode !== 'basic_info')
 
   filteredQuestions.forEach((q, idx) => {
-    const rowH = 56
+    ctx.font = 'bold 15px Changa, sans-serif'
+    const qLines = wrapText(ctx, isRTL ? q.titleAr : q.title, maxQuestionWidth)
+
+    const qSelected = (answers[q.id] ?? []).join(' / ') || '—'
+    ctx.font = 'bold 16px Changa, sans-serif'
+    const optLines = wrapText(ctx, qSelected, maxOptionsWidth)
+
+    const lineCount = Math.max(qLines.length, optLines.length)
+    const lineHeight = 26
+    const rowH = Math.max(56, 34 + (lineCount - 1) * lineHeight + 22)
+
     ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#f9fafb'
     ctx.fillRect(margin, currentY, contentWidth, rowH)
     ctx.strokeStyle = '#e5e7eb'
@@ -126,22 +140,30 @@ export async function generateClientDossierPdf(
 
     ctx.fillStyle = '#4b5563'
     ctx.font = 'bold 15px Changa, sans-serif'
-    ctx.fillText(isRTL ? q.titleAr : q.title, th1X, currentY + 34)
+    qLines.forEach((line, lineIdx) => {
+      ctx.fillText(line, th1X, currentY + 34 + lineIdx * lineHeight)
+    })
 
-    const qSelected = (answers[q.id] ?? []).join(' / ') || '—'
     ctx.fillStyle = '#111827'
     ctx.font = 'bold 16px Changa, sans-serif'
-    ctx.fillText(qSelected, th2X, currentY + 34)
+    optLines.forEach((line, lineIdx) => {
+      ctx.fillText(line, th2X, currentY + 34 + lineIdx * lineHeight)
+    })
 
     currentY += rowH
   })
 
   if (clientInfo.note.trim()) {
     currentY += 35
+    ctx.font = '15px Changa, sans-serif'
+    const noteLines = wrapText(ctx, clientInfo.note, contentWidth - 40)
+    const noteLineHeight = 24
+    const noteBoxH = Math.max(120, 60 + noteLines.length * noteLineHeight + 20)
+
     ctx.fillStyle = '#f9fafb'
-    ctx.fillRect(margin, currentY, contentWidth, 120)
+    ctx.fillRect(margin, currentY, contentWidth, noteBoxH)
     ctx.strokeStyle = '#e5e7eb'
-    ctx.strokeRect(margin, currentY, contentWidth, 120)
+    ctx.strokeRect(margin, currentY, contentWidth, noteBoxH)
 
     ctx.fillStyle = '#C5A059'
     ctx.font = 'bold 14px Changa, sans-serif'
@@ -149,8 +171,10 @@ export async function generateClientDossierPdf(
 
     ctx.fillStyle = '#374151'
     ctx.font = '15px Changa, sans-serif'
-    ctx.fillText(clientInfo.note, th1X, currentY + 75)
-    currentY += 120
+    noteLines.forEach((line, lineIdx) => {
+      ctx.fillText(line, th1X, currentY + 75 + lineIdx * noteLineHeight)
+    })
+    currentY += noteBoxH
   }
 
   const footerY = height - 60
@@ -238,4 +262,35 @@ function buildPdfFromJpeg(jpegBytes: Uint8Array, imgW: number, imgH: number): Bl
   addChunk(xref)
 
   return new Blob(chunks as BlobPart[], { type: 'application/pdf' })
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const paragraphs = text.split('\n')
+  const lines: string[] = []
+
+  for (const paragraph of paragraphs) {
+    const trimmed = paragraph.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    const words = trimmed.split(/\s+/)
+    let currentLine = ''
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine)
+        currentLine = word
+      } else {
+        currentLine = testLine
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine)
+    }
+  }
+
+  return lines.length > 0 ? lines : [text]
 }

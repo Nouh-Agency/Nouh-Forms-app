@@ -1,7 +1,7 @@
 import { useState, type Dispatch, type SetStateAction } from 'react'
 import type { BriefDisciplineConfig, ClientBasicInfo } from '../types/startProject.types'
 import { generateClientDossierPdf } from '../utils/pdfGenerator'
-import { ArrowUpRightIcon, CheckIcon } from './Icons'
+import { ArrowUpRightIcon } from './Icons'
 
 interface SummaryStepProps {
   config: BriefDisciplineConfig
@@ -10,6 +10,7 @@ interface SummaryStepProps {
   setClientInfo: Dispatch<SetStateAction<ClientBasicInfo>>
   submitBrief: () => void
   isRTL?: boolean
+  onSaveProject?: () => Promise<void>
 }
 
 export default function SummaryStep({
@@ -18,13 +19,22 @@ export default function SummaryStep({
   clientInfo,
   setClientInfo,
   isRTL = false,
+  onSaveProject,
 }: SummaryStepProps) {
-  const [copied, setCopied] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const handleDownloadPdf = async () => {
     try {
       setIsExporting(true)
+      setErrorMessage(null)
+      setSuccessMessage(null)
+
+      if (onSaveProject) {
+        await onSaveProject()
+      }
+
       const pdfBlob = await generateClientDossierPdf(config, answers, clientInfo, isRTL)
       const fileName = clientInfo.name.trim()
         ? `${isRTL ? 'ملف العميل' : 'Client Dossier'} - ${clientInfo.name.trim()}.pdf`
@@ -38,33 +48,23 @@ export default function SummaryStep({
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(downloadUrl)
+
+      setSuccessMessage(
+        isRTL
+          ? 'تم حفظ المشروع وتصدير ملف العميل بنجاح!'
+          : 'Project saved and dossier exported successfully!'
+      )
+    } catch {
+      setErrorMessage(
+        isRTL
+          ? 'تعذر حفظ المشروع في السيرفر، يرجى المحاولة مرة أخرى.'
+          : 'Failed to save project to server, please try again.'
+      )
     } finally {
       setIsExporting(false)
     }
   }
 
-  const copySummaryText = () => {
-    const summaryLines = config.questions
-      .filter((q) => q.mode !== 'basic_info')
-      .map((q) => `${isRTL ? q.titleAr : q.title}: ${(answers[q.id] ?? []).join(', ') || '—'}`)
-      .join('\n')
-
-    const fullDossier = [
-      `=== ${isRTL ? 'ملف العميل' : 'CLIENT DOSSIER'}: ${clientInfo.name || '—'} ===`,
-      `${isRTL ? 'القسم' : 'Discipline'}: ${isRTL ? config.labelAr : config.label}`,
-      `${isRTL ? 'الهاتف' : 'Phone'}: ${clientInfo.phone || '—'}`,
-      `${isRTL ? 'العنوان' : 'Address'}: ${clientInfo.address || '—'}`,
-      '',
-      `${isRTL ? 'تفاصيل الإجابات الهرمية' : 'Hierarchical Selections'}:`,
-      summaryLines,
-      '',
-      `${isRTL ? 'ملاحظات إضافية' : 'Notes'}: ${clientInfo.note || '—'}`,
-    ].join('\n')
-
-    navigator.clipboard.writeText(fullDossier)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
-  }
 
   return (
     <section className="flex-1 pb-8">
@@ -81,7 +81,7 @@ export default function SummaryStep({
             <span className="text-[#C5A059] block sm:inline">{clientInfo.name || (isRTL ? 'عميل جديد' : 'New Client')}</span>
           </h2>
 
-          <div className="mt-8 p-5 bg-[#0b0b0b] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="mt-8 p-5 bg-[#0b0b0b] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <div className="text-white/30 text-[9px] tracking-[0.2em] font-display uppercase mb-1">
                 {isRTL ? 'الاسم' : 'NAME'}
@@ -96,6 +96,14 @@ export default function SummaryStep({
               </div>
               <div className="text-white text-[13px] font-medium font-display">
                 {clientInfo.phone || '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-white/30 text-[9px] tracking-[0.2em] font-display uppercase mb-1">
+                {isRTL ? 'البريد الإلكتروني' : 'EMAIL'}
+              </div>
+              <div className="text-white text-[13px] font-medium font-display truncate">
+                {clientInfo.email || '—'}
               </div>
             </div>
             <div>
@@ -137,22 +145,7 @@ export default function SummaryStep({
               })}
           </div>
 
-          <div className="mt-6 flex gap-4">
-            <button
-              type="button"
-              onClick={copySummaryText}
-              className="inline-flex items-center gap-2 px-4 py-2 border border-white/15 hover:border-[#C5A059] text-white/70 hover:text-white bg-transparent text-[10px] tracking-[0.2em] uppercase font-display cursor-pointer transition-colors"
-            >
-              {copied ? (
-                <>
-                  <CheckIcon className="w-3.5 h-3.5 text-[#C5A059]" />
-                  <span>{isRTL ? 'تم نسخ الملف' : 'DOSSIER COPIED'}</span>
-                </>
-              ) : (
-                <span>{isRTL ? 'نسخ بيانات الملف' : 'COPY DOSSIER DATA'}</span>
-              )}
-            </button>
-          </div>
+
         </div>
 
         <form
@@ -178,6 +171,18 @@ export default function SummaryStep({
               className="w-full resize-none bg-transparent border-0 border-b border-white/15 focus:border-[#C5A059] outline-none text-white/80 pb-3 placeholder:text-white/15 transition-colors font-light text-[13px] leading-[1.8] font-display"
             />
           </label>
+
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-red-950/40 border border-red-500/30 text-red-300 text-xs font-display">
+              {errorMessage}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-6 p-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-display">
+              {successMessage}
+            </div>
+          )}
 
           <button
             type="submit"

@@ -11,6 +11,7 @@ interface NavigationActionsProps {
   goBack: () => void
   goNext: () => void
   isRTL?: boolean
+  isPending?: boolean
 }
 
 export default function NavigationActions({
@@ -23,6 +24,7 @@ export default function NavigationActions({
   goBack,
   goNext,
   isRTL = false,
+  isPending = false,
 }: NavigationActionsProps) {
   return (
     <>
@@ -48,22 +50,22 @@ export default function NavigationActions({
 
           {!isSummary && (
             <button
-              disabled={!canContinue}
+              disabled={!canContinue || isPending}
               onClick={goNext}
               className="inline-flex items-center gap-4 bg-transparent border-0 p-0 transition-all duration-300"
-              style={{ cursor: canContinue ? 'pointer' : 'not-allowed' }}
+              style={{ cursor: canContinue && !isPending ? 'pointer' : 'not-allowed' }}
             >
               <span
-                className={`text-[10px] tracking-[0.46em] uppercase transition-colors font-display ${canContinue ? 'text-[#D4B06A]' : 'text-white/20'}`}
+                className={`text-[10px] tracking-[0.46em] uppercase transition-colors font-display ${canContinue && !isPending ? 'text-[#D4B06A]' : 'text-white/20'}`}
               >
-                {isRTL ? 'متابعة' : 'CONTINUE'}
+                {isPending ? (isRTL ? 'جاري الحفظ...' : 'SAVING...') : isRTL ? 'متابعة' : 'CONTINUE'}
               </span>
               <span
-                className={`h-px transition-all duration-300 ${canContinue ? 'bg-[#C5A059]' : 'bg-white/10'}`}
-                style={{ width: canContinue ? 48 : 22 }}
+                className={`h-px transition-all duration-300 ${canContinue && !isPending ? 'bg-[#C5A059]' : 'bg-white/10'}`}
+                style={{ width: canContinue && !isPending ? 48 : 22 }}
               />
               <ArrowRightIcon
-                className={`w-3.5 h-3.5 transition-colors ${canContinue ? 'text-[#C5A059]' : 'text-white/15'} ${isRTL ? 'scale-x-[-1]' : ''}`}
+                className={`w-3.5 h-3.5 transition-colors ${canContinue && !isPending ? 'text-[#C5A059]' : 'text-white/15'} ${isRTL ? 'scale-x-[-1]' : ''}`}
               />
             </button>
           )}

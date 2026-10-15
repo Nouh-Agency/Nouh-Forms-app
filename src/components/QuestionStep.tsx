@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { BriefQuestion, BriefDisciplineConfig, ClientBasicInfo, BriefOption } from '../types/startProject.types'
-import { ArrowRightIcon, CheckIcon, CircleCheckIcon, PlusIcon } from './Icons'
+import { CheckIcon, CircleCheckIcon, PlusIcon } from './Icons'
 
 interface QuestionStepProps {
   question: BriefQuestion
@@ -10,8 +10,8 @@ interface QuestionStepProps {
   setClientInfo: Dispatch<SetStateAction<ClientBasicInfo>>
   toggleOption: (q: BriefQuestion, value: string) => void
   setHoveredOption: (opt: string | null) => void
-  canContinue: boolean
-  goNext: () => void
+  canContinue?: boolean
+  goNext?: () => void
   isRTL?: boolean
 }
 
@@ -23,8 +23,6 @@ export default function QuestionStep({
   setClientInfo,
   toggleOption,
   setHoveredOption,
-  canContinue,
-  goNext,
   isRTL = false,
 }: QuestionStepProps) {
   const mode = question.mode ?? 'list'
@@ -96,6 +94,20 @@ export default function QuestionStep({
                   placeholder="+966 ..."
                   value={clientInfo.phone}
                   onChange={(e) => setClientInfo((prev) => ({ ...prev, phone: e.target.value }))}
+                  className="w-full bg-transparent border-0 border-b border-white/15 focus:border-[#C5A059] outline-none text-white pb-3 transition-colors placeholder:text-white/15 font-display text-[18px]"
+                />
+              </label>
+
+              <label className="block mb-8">
+                <span className="block text-white/70 text-[11px] tracking-[0.2em] mb-3 font-display">
+                  {isRTL ? 'البريد الإلكتروني *' : 'EMAIL ADDRESS *'}
+                </span>
+                <input
+                  type="email"
+                  required
+                  placeholder="name@example.com"
+                  value={clientInfo.email ?? ''}
+                  onChange={(e) => setClientInfo((prev) => ({ ...prev, email: e.target.value }))}
                   className="w-full bg-transparent border-0 border-b border-white/15 focus:border-[#C5A059] outline-none text-white pb-3 transition-colors placeholder:text-white/15 font-display text-[18px]"
                 />
               </label>
@@ -266,25 +278,6 @@ export default function QuestionStep({
         <div className="text-white/20 text-[9px] tracking-[0.4em] hidden sm:block uppercase font-display">
           {isRTL ? config.shortLabelAr : config.shortLabel} / {isRTL ? 'خطوة هرمية' : 'STEP'}
         </div>
-        <button
-          disabled={!canContinue}
-          onClick={goNext}
-          className={`${isRTL ? 'mr-auto' : 'ml-auto'} inline-flex items-center gap-5 bg-transparent border-0 p-0`}
-          style={{ cursor: canContinue ? 'pointer' : 'not-allowed' }}
-        >
-          <span
-            className={`text-[10px] tracking-[0.46em] font-light uppercase font-display ${canContinue ? 'text-white' : 'text-white/20'}`}
-          >
-            {isRTL ? 'متابعة' : 'CONTINUE'}
-          </span>
-          <span
-            className={`h-px transition-all duration-300 ${canContinue ? 'bg-[#C5A059]' : 'bg-white/10'}`}
-            style={{ width: canContinue ? 56 : 24 }}
-          />
-          <ArrowRightIcon
-            className={`w-3.5 h-3.5 ${canContinue ? 'text-[#C5A059]' : 'text-white/15'} ${isRTL ? 'scale-x-[-1]' : ''}`}
-          />
-        </button>
       </div>
     </section>
   )
