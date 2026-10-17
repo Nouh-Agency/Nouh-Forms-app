@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
 import type { BriefDiscipline, BriefQuestion, ClientBasicInfo } from '../types/startProject.types'
+import type { ProjectCategory } from '../types/projectCategory.types'
+import type { ProjectType } from '../types/projectType.types'
+import type { DesignStyle } from '../types/designStyle.types'
 import { PROJECT_BRIEF_DISCIPLINES } from '../constants/startProjectConstants'
 import DisciplineSelection from '../components/DisciplineSelection'
 import NavigationActions from '../components/NavigationActions'
+import BasicInfoStep from '../components/BasicInfoStep'
+import CategoryStep from '../components/CategoryStep'
+import ProjectTypeStep from '../components/ProjectTypeStep'
+import DesignStyleStep from '../components/DesignStyleStep'
 import QuestionStep from '../components/QuestionStep'
 import SummaryStep from '../components/SummaryStep'
 import QuestionnaireStep from '../components/QuestionnaireStep'
 import { useCreateClientMutation } from '../queries/useCreateClientMutation'
 import { useCreateProjectMutation } from '../queries/useCreateProjectMutation'
-import { useProjectCategoriesQuery } from '../queries/useProjectCategoriesQuery'
-import { useProjectTypesQuery } from '../queries/useProjectTypesQuery'
-import { useDesignStylesQuery } from '../queries/useDesignStylesQuery'
 import { fetchProjectQuestionnaire } from '../api/questionnaireApi'
 import { useSubmitQuestionnaireAnswersMutation } from '../queries/useSubmitQuestionnaireAnswersMutation'
-import type { BriefOption } from '../types/startProject.types'
 import type { CreateProjectPayload } from '../types/project.types'
 import type {
   QuestionnaireQuestion,
@@ -28,7 +31,6 @@ interface StartProjectPageProps {
 export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
   const isRTL = true
   const [discipline, setDiscipline] = useState<BriefDiscipline | null>(null)
-  const [hoveredOption, setHoveredOption] = useState<string | null>(null)
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string[]>>({})
   const [createdClientId, setCreatedClientId] = useState<number | null>(null)
@@ -42,6 +44,10 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
     address: '',
     note: '',
   })
+  const [hoveredImage, setHoveredImage] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | null>(null)
+  const [selectedProjectType, setSelectedProjectType] = useState<ProjectType | null>(null)
+  const [selectedDesignStyle, setSelectedDesignStyle] = useState<DesignStyle | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
@@ -59,10 +65,6 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
   const selectedDepartmentId =
     discipline === 'architecture' ? 1 : discipline === 'graphic' ? 2 : discipline === 'technology' ? 3 : 1
 
-  const { data: projectCategories } = useProjectCategoriesQuery(selectedDepartmentId)
-  const { data: projectTypes } = useProjectTypesQuery()
-  const { data: designStyles } = useDesignStylesQuery()
-
   const config = PROJECT_BRIEF_DISCIPLINES.find((d) => d.id === discipline)
   const question = config?.questions[step]
   const isSummary = !!config && step >= config.questions.length
@@ -73,8 +75,36 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
     setDiscipline(id)
     setStep(0)
     setAnswers({})
-    setHoveredOption(null)
+    setSelectedCategory(null)
+    setSelectedProjectType(null)
+    setSelectedDesignStyle(null)
+    setHoveredImage(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleSelectCategory = (value: string, cat: ProjectCategory | null) => {
+    setSelectedCategory(cat)
+    setAnswers((prev) => ({ ...prev, [question?.id ?? 'projectType']: [value] }))
+  }
+
+  const handleSelectProjectType = (value: string, pt: ProjectType | null) => {
+    setSelectedProjectType(pt)
+    setAnswers((prev) => ({ ...prev, [question?.id ?? 'subType']: [value] }))
+  }
+
+  const handleToggleDesignStyle = (value: string, style: DesignStyle | null) => {
+    const questionId = question?.id ?? 'style'
+    const current = answers[questionId] ?? []
+    if (current.includes(value)) {
+      setAnswers((prev) => ({ ...prev, [questionId]: current.filter((v) => v !== value) }))
+      if (selectedDesignStyle?.name === value) {
+        setSelectedDesignStyle(null)
+      }
+    } else {
+      if (question?.max && current.length >= question.max) return
+      setAnswers((prev) => ({ ...prev, [questionId]: [...current, value] }))
+      setSelectedDesignStyle(style)
+    }
   }
 
   const toggleOption = (q: BriefQuestion, value: string) => {
@@ -103,7 +133,7 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
       : (answers[question.id]?.length ?? 0) > 0
 
   const goBack = () => {
-    setHoveredOption(null)
+    setHoveredImage(null)
     if (!config) {
       if (onNavigateHome) onNavigateHome()
       return
@@ -129,7 +159,7 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
         {
           onSuccess: (client) => {
             setCreatedClientId(client.id)
-            setHoveredOption(null)
+            setHoveredImage(null)
             setStep((s) => s + 1)
             window.scrollTo({ top: 0, behavior: 'smooth' })
           },
@@ -137,7 +167,7 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
       )
       return
     }
-    setHoveredOption(null)
+    setHoveredImage(null)
     setStep((s) => s + 1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -154,16 +184,6 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
       clientId = client.id
       setCreatedClientId(client.id)
     }
-
-    const selectedCategory = projectCategories?.find(
-      (c) => c.name === answers['projectType']?.[0] || String(c.id) === answers['projectType']?.[0]
-    )
-    const selectedProjectType = projectTypes?.find(
-      (pt) => pt.name === answers['subType']?.[0] || String(pt.id) === answers['subType']?.[0]
-    )
-    const selectedDesignStyle = designStyles?.find(
-      (ds) => ds.name === answers['style']?.[0] || String(ds.id) === answers['style']?.[0]
-    )
 
     const subTypeName = answers['subType']?.[0]
     const projectName = subTypeName
@@ -231,73 +251,10 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
     )}&body=${encodeURIComponent(body)}`
   }
 
-  const departmentCategories = (projectCategories ?? [])
-    .filter((cat) => cat.department_id === selectedDepartmentId && cat.is_active !== false)
-    .sort((a, b) => a.sort_order - b.sort_order)
-
-  const apiCategoryOptions: BriefOption[] = departmentCategories.map((cat) => ({
-    label: cat.name,
-    labelAr: cat.name,
-    note: cat.description,
-    noteAr: cat.description,
-    image: cat.image,
-  }))
-
-  const dynamicOptionsByParent: Record<string, BriefOption[]> = {
-    ...(question?.optionsByParent ?? {}),
-  }
-
-  if (projectCategories && projectTypes && projectTypes.length > 0) {
-    projectCategories.forEach((cat) => {
-      const typesForCat = projectTypes
-        .filter((pt) => pt.project_category_id === cat.id && pt.is_active !== false)
-        .sort((a, b) => a.sort_order - b.sort_order)
-
-      if (typesForCat.length > 0) {
-        const mappedOptions: BriefOption[] = typesForCat.map((pt) => ({
-          label: pt.name,
-          labelAr: pt.name,
-          note: pt.description,
-          noteAr: pt.description,
-          image: pt.image,
-        }))
-        dynamicOptionsByParent[cat.name] = mappedOptions
-        dynamicOptionsByParent[String(cat.id)] = mappedOptions
-      }
-    })
-  }
-
-  const activeDesignStyles = (designStyles ?? [])
-    .filter((s) => s.is_active !== false)
-    .sort((a, b) => a.sort_order - b.sort_order)
-
-  const apiDesignStyleOptions: BriefOption[] = activeDesignStyles.map((item) => ({
-    label: item.name,
-    labelAr: item.name,
-    note: item.description,
-    noteAr: item.description,
-    image: item.image,
-  }))
-
-  const effectiveQuestion =
-    question && question.id === 'projectType' && apiCategoryOptions.length > 0
-      ? { ...question, options: apiCategoryOptions }
-      : question && question.parentQuestionId === 'projectType' && projectTypes && projectTypes.length > 0
-        ? { ...question, optionsByParent: dynamicOptionsByParent }
-        : question && question.id === 'style' && apiDesignStyleOptions.length > 0
-          ? { ...question, options: apiDesignStyleOptions }
-          : question
-
-  const mode = effectiveQuestion?.mode ?? 'list'
-  const activeOptions = effectiveQuestion?.options ?? (
-    effectiveQuestion?.parentQuestionId && effectiveQuestion?.optionsByParent
-      ? effectiveQuestion.optionsByParent[(answers[effectiveQuestion.parentQuestionId] ?? [])[0]] ??
-        Object.values(effectiveQuestion.optionsByParent)[0] ?? []
-      : []
-  )
-  const hoveredImage = activeOptions.find(
-    (option) => option.label === hoveredOption || option.labelAr === hoveredOption
-  )?.image
+  const isCategoryQuestion = question?.id === 'projectType'
+  const isProjectTypeQuestion =
+    question?.id === 'subType' && discipline === 'architecture'
+  const isDesignStyleQuestion = question?.id === 'style'
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-[#080808] text-white">
@@ -330,7 +287,7 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
         />
       ) : (
         <main className="relative min-h-[100svh] bg-[#080808] text-white overflow-hidden">
-          {!isSummary && mode === 'image' && hoveredImage && (
+          {!isSummary && hoveredImage && (
             <div className="fixed inset-0 pointer-events-none z-0">
               <img
                 src={hoveredImage}
@@ -382,15 +339,61 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
                 isRTL={isRTL}
                 onSaveProject={handleSaveProject}
               />
-            ) : effectiveQuestion ? (
+            ) : question?.mode === 'basic_info' ? (
+              <BasicInfoStep
+                question={question}
+                clientInfo={clientInfo}
+                setClientInfo={setClientInfo}
+                isRTL={isRTL}
+                shortLabel={config.shortLabel}
+                shortLabelAr={config.shortLabelAr}
+              />
+            ) : isCategoryQuestion ? (
+              <CategoryStep
+                question={question}
+                departmentId={selectedDepartmentId}
+                selectedOption={answers[question.id]?.[0]}
+                onSelectOption={handleSelectCategory}
+                onHoverImage={setHoveredImage}
+                isRTL={isRTL}
+                shortLabel={config.shortLabel}
+                shortLabelAr={config.shortLabelAr}
+              />
+            ) : isProjectTypeQuestion ? (
+              <ProjectTypeStep
+                question={question}
+                categoryId={selectedCategory?.id}
+                selectedCategoryName={answers['projectType']?.[0]}
+                selectedOption={answers[question.id]?.[0]}
+                onSelectOption={handleSelectProjectType}
+                onHoverImage={setHoveredImage}
+                isRTL={isRTL}
+                shortLabel={config.shortLabel}
+                shortLabelAr={config.shortLabelAr}
+              />
+            ) : isDesignStyleQuestion ? (
+              <DesignStyleStep
+                question={question}
+                selectedOptions={answers[question.id] ?? []}
+                onToggleOption={handleToggleDesignStyle}
+                onHoverImage={setHoveredImage}
+                isRTL={isRTL}
+                shortLabel={config.shortLabel}
+                shortLabelAr={config.shortLabelAr}
+              />
+            ) : question ? (
               <QuestionStep
-                question={effectiveQuestion}
+                question={question}
                 config={config}
                 answers={answers}
                 clientInfo={clientInfo}
                 setClientInfo={setClientInfo}
                 toggleOption={toggleOption}
-                setHoveredOption={setHoveredOption}
+                setHoveredOption={(opt) => {
+                  const activeOptions = question.options ?? []
+                  const found = activeOptions.find((o) => o.label === opt || o.labelAr === opt)
+                  setHoveredImage(found?.image ?? null)
+                }}
                 canContinue={canContinue}
                 goNext={goNext}
                 isRTL={isRTL}
