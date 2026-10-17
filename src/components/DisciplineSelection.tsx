@@ -89,73 +89,135 @@ export default function DisciplineSelection({
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_36%] border-t border-white/[0.08] flex-1 min-h-[460px]">
           <div className={`border-r-0 ${isRTL ? 'lg:border-l' : 'lg:border-r'} border-white/[0.08]`}>
-            {isLoading && activeList.length === 0 ? (
-              <div className="py-8 flex flex-col gap-4">
-                {[1, 2, 3].map((n) => (
+            <div className="lg:hidden flex flex-col gap-4 py-6">
+              {isLoading && activeList.length === 0 ? (
+                [1, 2, 3].map((n) => (
                   <div
                     key={n}
-                    className="animate-pulse flex items-center gap-6 py-8 border-b border-white/[0.08]"
+                    className="animate-pulse bg-[#0a0a0a] border border-white/[0.08] min-h-[200px] p-5 flex flex-col justify-between"
                   >
-                    <div className="w-8 h-4 bg-white/10 rounded-sm" />
-                    <div className="flex-1 space-y-3">
-                      <div className="w-56 h-6 bg-white/15 rounded-sm" />
-                      <div className="w-80 h-3 bg-white/5 rounded-sm" />
+                    <div className="w-8 h-4 bg-white/10" />
+                    <div className="space-y-3">
+                      <div className="w-3/4 h-5 bg-white/15" />
+                      <div className="w-1/2 h-3 bg-white/5" />
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              departments.map((item, i) => {
-                const active = activeDepartment?.id === item.id
-                const numString = String(i + 1).padStart(2, '0')
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleSelectDepartment(item)}
-                    onMouseEnter={() => setHoveredDepartmentId(item.id)}
-                    className="group w-full bg-transparent border-0 border-b border-white/[0.08] px-0 py-7 sm:py-9 text-start cursor-pointer block transition-colors"
-                    style={{
-                      opacity: revealed ? 1 : 0,
-                      transform: `translateY(${revealed ? 0 : 10}px)`,
-                      transition: `opacity .6s ease ${120 + i * 90}ms, transform .6s ease ${120 + i * 90}ms`,
-                    }}
-                  >
-                    <div className="grid grid-cols-[42px_1fr_auto] sm:grid-cols-[56px_1fr_auto] gap-4 sm:gap-6 items-center">
-                      <span
-                        className={`text-[9px] tracking-[0.42em] font-display ${active ? 'text-[#C5A059]' : 'text-white/20'}`}
-                      >
-                        {numString}
-                      </span>
-                      <div>
-                        <div
-                          className="transition-colors duration-300 font-semibold font-display"
-                          style={{
-                            fontSize: 'clamp(22px,2.6vw,38px)',
-                            lineHeight: 1.1,
-                            letterSpacing: '-.01em',
-                            color: active ? 'white' : 'rgba(255,255,255,.42)',
-                          }}
-                        >
+                ))
+              ) : (
+                departments.map((item, i) => {
+                  const numString = String(i + 1).padStart(2, '0')
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSelectDepartment(item)}
+                      className="group relative overflow-hidden text-start bg-[#0a0a0a] border border-white/[0.08] active:border-[#C5A059] cursor-pointer min-h-[220px] w-full p-5 sm:p-6 flex flex-col justify-between transition-all"
+                      style={{
+                        opacity: revealed ? 1 : 0,
+                        transform: `translateY(${revealed ? 0 : 10}px)`,
+                        transition: `opacity .6s ease ${120 + i * 90}ms, transform .6s ease ${120 + i * 90}ms`,
+                      }}
+                    >
+                      {item.image && (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#080808]/95 via-[#080808]/50 to-[#080808]/20" />
+                      <div className="relative z-10 flex items-start justify-between">
+                        <span className="text-white/40 text-[9px] tracking-[0.45em] font-display">
+                          {numString}
+                        </span>
+                        <div className="w-7 h-7 rounded-full border border-white/20 bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/60">
+                          <ArrowUpRightIcon className={`w-3.5 h-3.5 text-[#C5A059] ${isRTL ? 'scale-x-[-1]' : ''}`} />
+                        </div>
+                      </div>
+                      <div className="relative z-10">
+                        <div className="text-white font-bold font-display text-[20px] sm:text-[22px] leading-tight">
                           {item.name}
                         </div>
-                        <div className="mt-2 text-[10px] tracking-[0.2em] text-white/25 font-light font-display">
-                          {item.description}
-                        </div>
+                        {item.description && (
+                          <div className="text-white/50 text-[10px] sm:text-[11px] tracking-wide mt-2 font-light font-display leading-relaxed">
+                            {item.description}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`hidden sm:block h-px transition-all duration-300 ${active ? 'bg-[#C5A059]' : 'bg-white/[0.12]'}`}
-                          style={{ width: active ? 48 : 22 }}
-                        />
-                        <ArrowUpRightIcon
-                          className={`w-3.5 h-3.5 transition-colors ${active ? 'text-[#C5A059]' : 'text-white/20'} ${isRTL ? 'scale-x-[-1]' : ''}`}
-                        />
+                    </button>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="hidden lg:block">
+              {isLoading && activeList.length === 0 ? (
+                <div className="py-8 flex flex-col gap-4">
+                  {[1, 2, 3].map((n) => (
+                    <div
+                      key={n}
+                      className="animate-pulse flex items-center gap-6 py-8 border-b border-white/[0.08]"
+                    >
+                      <div className="w-8 h-4 bg-white/10 rounded-sm" />
+                      <div className="flex-1 space-y-3">
+                        <div className="w-56 h-6 bg-white/15 rounded-sm" />
+                        <div className="w-80 h-3 bg-white/5 rounded-sm" />
                       </div>
                     </div>
-                  </button>
-                )
-              })
-            )}
+                  ))}
+                </div>
+              ) : (
+                departments.map((item, i) => {
+                  const active = activeDepartment?.id === item.id
+                  const numString = String(i + 1).padStart(2, '0')
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSelectDepartment(item)}
+                      onMouseEnter={() => setHoveredDepartmentId(item.id)}
+                      className="group w-full bg-transparent border-0 border-b border-white/[0.08] px-0 py-7 sm:py-9 text-start cursor-pointer block transition-colors"
+                      style={{
+                        opacity: revealed ? 1 : 0,
+                        transform: `translateY(${revealed ? 0 : 10}px)`,
+                        transition: `opacity .6s ease ${120 + i * 90}ms, transform .6s ease ${120 + i * 90}ms`,
+                      }}
+                    >
+                      <div className="grid grid-cols-[42px_1fr_auto] sm:grid-cols-[56px_1fr_auto] gap-4 sm:gap-6 items-center">
+                        <span
+                          className={`text-[9px] tracking-[0.42em] font-display ${active ? 'text-[#C5A059]' : 'text-white/20'}`}
+                        >
+                          {numString}
+                        </span>
+                        <div>
+                          <div
+                            className="transition-colors duration-300 font-semibold font-display"
+                            style={{
+                              fontSize: 'clamp(22px,2.6vw,38px)',
+                              lineHeight: 1.1,
+                              letterSpacing: '-.01em',
+                              color: active ? 'white' : 'rgba(255,255,255,.42)',
+                            }}
+                          >
+                            {item.name}
+                          </div>
+                          <div className="mt-2 text-[10px] tracking-[0.2em] text-white/25 font-light font-display">
+                            {item.description}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`hidden sm:block h-px transition-all duration-300 ${active ? 'bg-[#C5A059]' : 'bg-white/[0.12]'}`}
+                            style={{ width: active ? 48 : 22 }}
+                          />
+                          <ArrowUpRightIcon
+                            className={`w-3.5 h-3.5 transition-colors ${active ? 'text-[#C5A059]' : 'text-white/20'} ${isRTL ? 'scale-x-[-1]' : ''}`}
+                          />
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })
+              )}
+            </div>
           </div>
 
           <div className="relative hidden lg:block overflow-hidden bg-[#0b0b0b]">

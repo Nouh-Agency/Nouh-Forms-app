@@ -5,6 +5,7 @@ import { fetchProjectQuestionnaire } from '../api/questionnaireApi'
 import { useSubmitQuestionnaireAnswersMutation } from '../queries/useSubmitQuestionnaireAnswersMutation'
 import QuestionnaireStep from '../components/QuestionnaireStep'
 import { useWizard } from '../context/WizardContext'
+import { decodeProjectId, encodeProjectId } from '../utils/projectToken'
 
 export default function QuestionnairePage() {
   const { projectId: paramProjectId } = useParams<{ projectId: string }>()
@@ -16,13 +17,27 @@ export default function QuestionnairePage() {
     clearCompletedWizard,
   } = useWizard()
 
-  const numProjectId = paramProjectId ? Number(paramProjectId) : savedProject?.id ?? 0
+  const decodedParamId = paramProjectId ? decodeProjectId(paramProjectId) : null
+  const numProjectId = decodedParamId ?? savedProject?.id ?? 0
 
   const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isFinishedSuccessfully, setIsFinishedSuccessfully] = useState(false)
 
   const submitAnswersMutation = useSubmitQuestionnaireAnswersMutation()
+
+  useEffect(() => {
+    if (paramProjectId) {
+      if (/^\d+$/.test(paramProjectId)) {
+        const rawNum = Number(paramProjectId)
+        if (rawNum > 0) {
+          navigate(`/start-project/questionnaire/${encodeProjectId(rawNum)}`, { replace: true })
+        }
+      } else if (!decodedParamId) {
+        navigate('/start-project/summary', { replace: true })
+      }
+    }
+  }, [paramProjectId, decodedParamId, navigate])
 
   useEffect(() => {
     if (!numProjectId || isNaN(numProjectId)) {
@@ -95,7 +110,7 @@ export default function QuestionnairePage() {
 
   if (!numProjectId) {
     return (
-      <main className="min-h-screen bg-[#080808] text-white flex items-center justify-center p-8">
+      <main className="min-h-screen bg-[#080808] text-white flex items-center justify-center px-8 pt-20 pb-8">
         <div className="text-center">
           <div className="text-red-400 text-sm font-display mb-4">
             لم يتم العثور على مشروع محدد للانتقال إلى الاستبيان.
@@ -113,7 +128,7 @@ export default function QuestionnairePage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-[#080808] text-white flex items-center justify-center p-8">
+      <main className="min-h-screen bg-[#080808] text-white flex items-center justify-center px-8 pt-20 pb-8">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-[#C5A059] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <div className="text-[#D4B06A] text-sm tracking-[0.2em] font-display">
@@ -125,7 +140,7 @@ export default function QuestionnairePage() {
   }
 
   return (
-    <main className="relative min-h-screen bg-[#080808] text-white p-[5vw]">
+    <main className="relative min-h-screen bg-[#080808] text-white px-[5vw] pt-24 sm:pt-28 pb-16">
       <QuestionnaireStep
         questions={questions}
         projectName={savedProject?.name}
@@ -155,7 +170,7 @@ export default function QuestionnairePage() {
             </div>
 
             <div className="inline-block px-3.5 py-1 mb-4 rounded-full bg-[#C5A059]/10 border border-[#C5A059]/30 text-[#C5A059] text-[11px] font-medium tracking-[0.2em] font-display uppercase">
-              {savedProject?.name ? `${savedProject.name} — #${numProjectId}` : `المشروع #${numProjectId}`}
+              {savedProject?.name ? `${savedProject.name} — #${encodeProjectId(numProjectId)}` : `المشروع #${encodeProjectId(numProjectId)}`}
             </div>
 
             <h2 className="text-white text-2xl sm:text-3xl font-extrabold font-display mb-4">

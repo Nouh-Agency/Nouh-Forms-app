@@ -8,7 +8,6 @@ export default function DesignStylePage() {
     discipline,
     answers,
     setAnswers,
-    selectedDesignStyle,
     setSelectedDesignStyle,
     setHoveredImage,
   } = useWizard()

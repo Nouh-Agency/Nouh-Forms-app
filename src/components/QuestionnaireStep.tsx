@@ -4,6 +4,7 @@ import type {
   QuestionnaireAnswerValue,
 } from '../types/questionnaire.types'
 import { ArrowUpRightIcon, CheckIcon, StarIcon } from './Icons'
+import { encodeProjectId } from '../utils/projectToken'
 
 interface ParsedValidationRules {
   required?: boolean
@@ -302,13 +303,7 @@ export default function QuestionnaireStep({
     }
 
     if (!isEmpty) {
-      if (fieldType === 'file') {
-        const files = Array.isArray(val) ? val : fileAnswers[q.id] || []
-        const hasOverMax = files.some((f) => f instanceof File && f.size > 10 * 1024 * 1024)
-        if (hasOverMax) {
-          return isRTL ? 'حجم الملف يتجاوز 10 ميغابايت' : 'File size exceeds 10 MB'
-        }
-      } else if (fieldType === 'linear_scale') {
+      if (fieldType === 'linear_scale') {
         const num = Number(val)
         if (isNaN(num)) {
           return isRTL ? 'يرجى إدخال قيمة رقمية بين 1 و 5' : 'Please enter a numeric value between 1 and 5'
@@ -815,7 +810,7 @@ export default function QuestionnaireStep({
             style={{ fontSize: 'clamp(28px,3.5vw,50px)', lineHeight: 1.1, letterSpacing: '-0.02em' }}
           >
             <span>{isRTL ? 'استبيان المشروع: ' : 'QUESTIONNAIRE: '}</span>
-            <span className="text-[#C5A059]">{projectName || (projectId ? `#${projectId}` : '')}</span>
+            <span className="text-[#C5A059]">{projectName || (projectId ? `#${encodeProjectId(projectId)}` : '')}</span>
           </h2>
         </div>
 
@@ -1352,18 +1347,7 @@ export default function QuestionnaireStep({
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-6 border-t border-white/[0.08]">
-              {onBack && (
-                <button
-                  type="button"
-                  onClick={onBack}
-                  disabled={isSubmitting}
-                  className="px-6 py-3 border border-white/20 text-white/60 text-xs tracking-wider font-display hover:text-white hover:border-white/40 transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  {isRTL ? 'رجوع للملخص' : 'Back to Summary'}
-                </button>
-              )}
-
+            <div className="flex items-center justify-end pt-6 border-t border-white/[0.08]">
               <button
                 type="submit"
                 disabled={isSubmitting}

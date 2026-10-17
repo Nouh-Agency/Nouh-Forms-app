@@ -4,6 +4,7 @@ import { PROJECT_BRIEF_DISCIPLINES } from '../constants/startProjectConstants'
 import NavigationActions from '../components/NavigationActions'
 import RouteLoadingFallback from '../components/RouteLoadingFallback'
 import RouteErrorBoundary from '../components/RouteErrorBoundary'
+import { ArrowLeftIcon } from '../components/Icons'
 import { useWizard } from '../context/WizardContext'
 import {
   getDisciplineSteps,
@@ -11,6 +12,7 @@ import {
   getPrevStepPath,
 } from '../utils/wizardRoutes'
 import { useCreateClientMutation } from '../queries/useCreateClientMutation'
+import { decodeProjectId, encodeProjectId } from '../utils/projectToken'
 
 export default function StartProjectWizardLayout() {
   const isRTL = true
@@ -67,12 +69,15 @@ export default function StartProjectWizardLayout() {
   const hasCategory = Boolean((answers['projectType']?.length ?? 0) > 0 || selectedCategory !== null)
 
   if (isQuestionnaireRoute) {
-    const match = pathname.match(/\/questionnaire\/(\d+)/)
-    if (!match && !savedProject?.id) {
+    const match = pathname.match(/\/questionnaire\/([^/]+)/)
+    const token = match?.[1]
+    const decodedId = token ? decodeProjectId(token) : null
+
+    if (!decodedId && !savedProject?.id) {
       return <Navigate to="/start-project/summary" replace />
     }
-    if (!match && savedProject?.id) {
-      return <Navigate to={`/start-project/questionnaire/${savedProject.id}`} replace />
+    if (!token && savedProject?.id) {
+      return <Navigate to={`/start-project/questionnaire/${encodeProjectId(savedProject.id)}`} replace />
     }
   }
 
@@ -264,7 +269,7 @@ export default function StartProjectWizardLayout() {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-[#080808] text-white">
       <header
-        className={`fixed top-0 left-0 right-0 z-50 px-[5vw] transition-all duration-300 flex items-center justify-between pointer-events-none whitespace-nowrap ${isScrolled
+        className={`fixed top-0 left-0 right-0 z-50 px-[5vw] transition-all duration-300 flex items-center justify-between pointer-events-none whitespace-nowrap ${isScrolled || isQuestionnaireRoute
             ? 'py-4 bg-[#080808]/85 backdrop-blur-md border-b border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_4px_25px_rgba(0,0,0,0.6)]'
             : 'py-5 bg-transparent border-b border-transparent'
           }`}
@@ -282,6 +287,20 @@ export default function StartProjectWizardLayout() {
             {isRTL ? 'نظام استبيان المشاريع الهرمي' : 'FORMS & BRIEFS'}
           </span>
         </div>
+
+        {isQuestionnaireRoute && (
+          <button
+            type="button"
+            onClick={() => {
+              navigate('/start-project/summary')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            className="pointer-events-auto inline-flex items-center gap-2.5 px-4 py-2 border border-white/20 hover:border-[#C5A059] text-white/70 hover:text-white bg-[#0b0b0b]/70 hover:bg-[#0b0b0b] transition-all cursor-pointer font-display text-[11px] tracking-wider uppercase backdrop-blur-md"
+          >
+            <ArrowLeftIcon className={`w-3.5 h-3.5 ${isRTL ? 'scale-x-[-1]' : ''}`} />
+            <span>{isRTL ? 'رجوع للملخص' : 'Back to Summary'}</span>
+          </button>
+        )}
       </header>
 
       {isDisciplineRoute ? (

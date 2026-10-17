@@ -6,6 +6,7 @@ import { useCreateClientMutation } from '../queries/useCreateClientMutation'
 import { useCreateProjectMutation } from '../queries/useCreateProjectMutation'
 import type { CreateProjectPayload } from '../types/project.types'
 import { computeProjectSignature } from '../utils/wizardStorage'
+import { encodeProjectId } from '../utils/projectToken'
 
 export default function SummaryPage() {
   const navigate = useNavigate()
@@ -72,7 +73,7 @@ export default function SummaryPage() {
     )
 
     if (savedProject?.id && savedProjectHash === currentSignature) {
-      navigate(`/start-project/questionnaire/${savedProject.id}`)
+      navigate(`/start-project/questionnaire/${encodeProjectId(savedProject.id)}`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
@@ -109,7 +110,7 @@ export default function SummaryPage() {
     const createdProject = await createProjectMutation.mutateAsync(payload)
     setSavedProject({ id: createdProject.id, name: createdProject.project_name })
     setSavedProjectHash(currentSignature)
-    navigate(`/start-project/questionnaire/${createdProject.id}`)
+    navigate(`/start-project/questionnaire/${encodeProjectId(createdProject.id)}`)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
