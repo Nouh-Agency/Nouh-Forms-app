@@ -21,6 +21,12 @@ interface ParsedValidationRules {
   columns?: string[]
 }
 
+interface CustomQuestion {
+  id: string
+  question: string
+  answer: string
+}
+
 interface QuestionnaireStepProps {
   questions: QuestionnaireQuestion[]
   projectName?: string
@@ -49,6 +55,37 @@ export default function QuestionnaireStep({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([])
+  const [additionalNotes, setAdditionalNotes] = useState('')
+  const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({})
+
+  const handleAddCustomQuestion = () => {
+    const newId = `cq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+    setCustomQuestions((prev) => [...prev, { id: newId, question: '', answer: '' }])
+  }
+
+  const handleRemoveCustomQuestion = (id: string) => {
+    setCustomQuestions((prev) => prev.filter((item) => item.id !== id))
+    setCustomQuestionErrors((prev) => {
+      const nextErrors = { ...prev }
+      delete nextErrors[`q_${id}`]
+      delete nextErrors[`a_${id}`]
+      return nextErrors
+    })
+  }
+
+  const handleUpdateCustomQuestion = (id: string, field: 'question' | 'answer', value: string) => {
+    setCustomQuestions((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    )
+    if (value.trim()) {
+      setCustomQuestionErrors((prev) => {
+        const nextErrors = { ...prev }
+        delete nextErrors[`${field === 'question' ? 'q' : 'a'}_${id}`]
+        return nextErrors
+      })
+    }
+  }
 
   const getRangeValue = (questionId: number): { from: string; to: string } => {
     const current = answers[questionId]
@@ -667,16 +704,37 @@ export default function QuestionnaireStep({
       }
     })
 
-    if (Object.keys(errors).length > 0) {
+    const cqErrors: Record<string, string> = {}
+    customQuestions.forEach((item) => {
+      const hasQ = Boolean(item.question.trim())
+      const hasA = Boolean(item.answer.trim())
+      if (hasQ && !hasA) {
+        cqErrors[`a_${item.id}`] = isRTL ? 'يرجى إدخال إجابة للسؤال' : 'Please enter an answer'
+      } else if (!hasQ && hasA) {
+        cqErrors[`q_${item.id}`] = isRTL ? 'يرجى إدخال نص السؤال' : 'Please enter the question text'
+      }
+    })
+
+    if (Object.keys(errors).length > 0 || Object.keys(cqErrors).length > 0) {
       setValidationErrors(errors)
-      const firstErrorQuestionId = Object.keys(errors)[0]
-      const el = document.getElementById(`question-${firstErrorQuestionId}`)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setCustomQuestionErrors(cqErrors)
+      if (Object.keys(errors).length > 0) {
+        const firstErrorQuestionId = Object.keys(errors)[0]
+        const el = document.getElementById(`question-${firstErrorQuestionId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      } else {
+        const firstCqErrorKey = Object.keys(cqErrors)[0]
+        const el = document.getElementById(`custom-field-${firstCqErrorKey}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
       }
       return
     }
 
+    setCustomQuestionErrors({})
     setIsSubmitting(true)
 
     const formattedAnswers: Record<string, QuestionnaireAnswerValue> = {}
@@ -773,6 +831,17 @@ export default function QuestionnaireStep({
           formattedAnswers[String(q.id)] = String(val)
         }
       }
+    })
+
+    if (additionalNotes.trim()) {
+      formattedAnswers['additional_notes'] = additionalNotes.trim()
+    }
+
+    const validCustomQuestions = customQuestions.filter(
+      (item) => item.question.trim() !== '' && item.answer.trim() !== ''
+    )
+    validCustomQuestions.forEach((item, index) => {
+      formattedAnswers[`custom_question_${index + 1}`] = `${item.question.trim()}: ${item.answer.trim()}`
     })
 
     try {
@@ -1340,6 +1409,129 @@ export default function QuestionnaireStep({
                 </div>
               )
             })}
+
+            <div className="bg-[#0b0b0b]/60 border border-white/[0.08] p-6 sm:p-8 space-y-8">
+              <div className="border-b border-white/[0.08] pb-4">
+                <h3 className="text-[#C5A059] text-base font-bold font-display uppercase tracking-wide">
+                  {isRTL ? 'الأسئلة والملاحظات الإضافية' : 'ADDITIONAL QUESTIONS & NOTES'}
+                </h3>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-white text-sm sm:text-base font-bold font-display">
+                      {isRTL ? 'إضافة سؤال وجواب مخصص' : 'Custom Question & Answer'}
+                    </h4>
+                    <p className="text-white/45 text-xs font-display leading-relaxed mt-1">
+                      {isRTL
+                        ? 'يمكنك إضافة سؤال وجواب بنص حر إذا كان لديك تفاصيل إضافية غير مذكورة في الاستبيان'
+                        : 'You can add custom questions and answers with free text if you have details not covered in the survey'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddCustomQuestion}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#C5A059]/10 border border-[#C5A059]/40 hover:bg-[#C5A059]/20 text-[#C5A059] text-xs font-bold font-display transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <span>{isRTL ? 'إضافة سؤال وجواب' : 'Add Question & Answer'}</span>
+                  </button>
+                </div>
+
+                {customQuestions.length > 0 && (
+                  <div className="space-y-4">
+                    {customQuestions.map((cq, idx) => (
+                      <div
+                        key={cq.id}
+                        className="p-5 bg-[#0e0e0e] border border-white/10 space-y-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#C5A059] text-xs font-bold font-display">
+                            {isRTL ? `سؤال إضافي #${idx + 1}` : `Custom Question #${idx + 1}`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomQuestion(cq.id)}
+                            className="text-white/30 hover:text-red-400 p-1 text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                            aria-label={isRTL ? 'حذف السؤال' : 'Remove question'}
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                            <span className="font-display">{isRTL ? 'حذف' : 'Remove'}</span>
+                          </button>
+                        </div>
+
+                        <div id={`custom-field-q_${cq.id}`} className="space-y-2">
+                          <label className="text-white/80 text-xs font-bold font-display block">
+                            {isRTL ? 'السؤال' : 'Question'}
+                          </label>
+                          <input
+                            type="text"
+                            value={cq.question}
+                            onChange={(e) => handleUpdateCustomQuestion(cq.id, 'question', e.target.value)}
+                            placeholder={isRTL ? 'أدخل نص السؤال هنا...' : 'Enter question text here...'}
+                            className={`w-full bg-transparent border-0 border-b outline-none text-white/90 pb-2 transition-colors placeholder:text-white/20 font-display text-[15px] ${
+                              customQuestionErrors[`q_${cq.id}`] ? 'border-red-500' : 'border-white/15 focus:border-[#C5A059]'
+                            }`}
+                          />
+                          {customQuestionErrors[`q_${cq.id}`] && (
+                            <p className="text-xs font-display text-red-400 mt-1">
+                              {customQuestionErrors[`q_${cq.id}`]}
+                            </p>
+                          )}
+                        </div>
+
+                        <div id={`custom-field-a_${cq.id}`} className="space-y-2">
+                          <label className="text-white/80 text-xs font-bold font-display block">
+                            {isRTL ? 'الإجابة' : 'Answer'}
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={cq.answer}
+                            onChange={(e) => handleUpdateCustomQuestion(cq.id, 'answer', e.target.value)}
+                            placeholder={isRTL ? 'أدخل نص الإجابة هنا...' : 'Enter answer text here...'}
+                            className={`w-full bg-[#111111]/40 border p-3 text-white/90 outline-none transition-colors placeholder:text-white/20 font-display text-sm resize-y ${
+                              customQuestionErrors[`a_${cq.id}`] ? 'border-red-500' : 'border-white/15 focus:border-[#C5A059]'
+                            }`}
+                          />
+                          {customQuestionErrors[`a_${cq.id}`] && (
+                            <p className="text-xs font-display text-red-400 mt-1">
+                              {customQuestionErrors[`a_${cq.id}`]}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 pt-6 border-t border-white/[0.08]">
+                <div>
+                  <label className="text-white text-sm sm:text-base font-bold font-display block leading-relaxed">
+                    {isRTL ? 'ملاحظات إضافية' : 'Additional Notes'}
+                  </label>
+                  <p className="text-white/45 text-xs font-display leading-relaxed mt-1">
+                    {isRTL
+                      ? 'هل لديك أي ملاحظات أو تفاصيل إضافية تود مشاركتها معنا بخصوص المشروع؟'
+                      : 'Do you have any additional notes or details you would like to share with us regarding the project?'}
+                  </p>
+                </div>
+                <textarea
+                  rows={4}
+                  value={additionalNotes}
+                  onChange={(e) => setAdditionalNotes(e.target.value)}
+                  placeholder={isRTL ? 'أدخل ملاحظاتك الإضافية هنا...' : 'Enter your additional notes here...'}
+                  className="w-full bg-[#111111]/40 border border-white/15 focus:border-[#C5A059] p-3.5 text-white/90 outline-none transition-colors placeholder:text-white/20 font-display text-sm resize-y"
+                />
+              </div>
+            </div>
 
             {submitError && (
               <div className="p-4 mb-6 border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-display">

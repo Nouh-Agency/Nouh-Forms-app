@@ -51,6 +51,10 @@ export async function submitQuestionnaireAnswers(
     }
   })
 
+  if (typeof answers.additional_notes === 'string' && answers.additional_notes.trim()) {
+    formData.append('notes', answers.additional_notes.trim())
+  }
+
   const response = await apiClient.post<SubmitQuestionnaireAnswersResponse>(
     `/api/projects/${projectId}/answers`,
     formData,
