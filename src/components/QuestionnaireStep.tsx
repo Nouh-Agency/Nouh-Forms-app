@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import type {
   QuestionnaireQuestion,
   QuestionnaireAnswerValue,
+  AdditionalQuestionItem,
 } from '../types/questionnaire.types'
 import { ArrowUpRightIcon, CheckIcon, StarIcon } from './Icons'
 import { encodeProjectId } from '../utils/projectToken'
@@ -34,7 +35,10 @@ interface QuestionnaireStepProps {
   isRTL?: boolean
   initialAnswers?: Record<number, string | string[]>
   onAnswersChange?: (answers: Record<number, string | string[]>) => void
-  onFinish?: (answers: Record<string, QuestionnaireAnswerValue>) => Promise<void> | void
+  onFinish?: (
+    answers: Record<string, QuestionnaireAnswerValue>,
+    additionalQuestions: AdditionalQuestionItem[]
+  ) => Promise<void> | void
   onBack?: () => void
 }
 
@@ -56,7 +60,6 @@ export default function QuestionnaireStep({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([])
-  const [additionalNotes, setAdditionalNotes] = useState('')
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({})
 
   const handleAddCustomQuestion = () => {
@@ -708,9 +711,7 @@ export default function QuestionnaireStep({
     customQuestions.forEach((item) => {
       const hasQ = Boolean(item.question.trim())
       const hasA = Boolean(item.answer.trim())
-      if (hasQ && !hasA) {
-        cqErrors[`a_${item.id}`] = isRTL ? 'يرجى إدخال إجابة للسؤال' : 'Please enter an answer'
-      } else if (!hasQ && hasA) {
+      if (!hasQ && hasA) {
         cqErrors[`q_${item.id}`] = isRTL ? 'يرجى إدخال نص السؤال' : 'Please enter the question text'
       }
     })
@@ -833,20 +834,16 @@ export default function QuestionnaireStep({
       }
     })
 
-    if (additionalNotes.trim()) {
-      formattedAnswers['additional_notes'] = additionalNotes.trim()
-    }
-
-    const validCustomQuestions = customQuestions.filter(
-      (item) => item.question.trim() !== '' && item.answer.trim() !== ''
-    )
-    validCustomQuestions.forEach((item, index) => {
-      formattedAnswers[`custom_question_${index + 1}`] = `${item.question.trim()}: ${item.answer.trim()}`
-    })
+    const validAdditionalQuestions: AdditionalQuestionItem[] = customQuestions
+      .filter((item) => item.question.trim() !== '')
+      .map((item) => ({
+        question: item.question.trim(),
+        answer: item.answer.trim() ? item.answer.trim() : null,
+      }))
 
     try {
       if (onFinish) {
-        await onFinish(formattedAnswers)
+        await onFinish(formattedAnswers, validAdditionalQuestions)
       } else {
         setSubmitted(true)
       }
@@ -1413,7 +1410,7 @@ export default function QuestionnaireStep({
             <div className="bg-[#0b0b0b]/60 border border-white/[0.08] p-6 sm:p-8 space-y-8">
               <div className="border-b border-white/[0.08] pb-4">
                 <h3 className="text-[#C5A059] text-base font-bold font-display uppercase tracking-wide">
-                  {isRTL ? 'الأسئلة والملاحظات الإضافية' : 'ADDITIONAL QUESTIONS & NOTES'}
+                  {isRTL ? 'الأسئلة الإضافية' : 'ADDITIONAL QUESTIONS'}
                 </h3>
               </div>
 
@@ -1510,26 +1507,6 @@ export default function QuestionnaireStep({
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className="space-y-3 pt-6 border-t border-white/[0.08]">
-                <div>
-                  <label className="text-white text-sm sm:text-base font-bold font-display block leading-relaxed">
-                    {isRTL ? 'ملاحظات إضافية' : 'Additional Notes'}
-                  </label>
-                  <p className="text-white/45 text-xs font-display leading-relaxed mt-1">
-                    {isRTL
-                      ? 'هل لديك أي ملاحظات أو تفاصيل إضافية تود مشاركتها معنا بخصوص المشروع؟'
-                      : 'Do you have any additional notes or details you would like to share with us regarding the project?'}
-                  </p>
-                </div>
-                <textarea
-                  rows={4}
-                  value={additionalNotes}
-                  onChange={(e) => setAdditionalNotes(e.target.value)}
-                  placeholder={isRTL ? 'أدخل ملاحظاتك الإضافية هنا...' : 'Enter your additional notes here...'}
-                  className="w-full bg-[#111111]/40 border border-white/15 focus:border-[#C5A059] p-3.5 text-white/90 outline-none transition-colors placeholder:text-white/20 font-display text-sm resize-y"
-                />
               </div>
             </div>
 

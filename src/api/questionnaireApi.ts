@@ -4,6 +4,8 @@ import type {
   QuestionnaireResponse,
   QuestionnaireAnswerValue,
   SubmitQuestionnaireAnswersResponse,
+  AdditionalQuestionItem,
+  SubmitAdditionalQuestionsResponse,
 } from '../types/questionnaire.types'
 
 export async function fetchProjectQuestionnaire(projectId: number): Promise<QuestionnaireQuestion[]> {
@@ -66,3 +68,17 @@ export async function submitQuestionnaireAnswers(
   )
   return response.data
 }
+
+export async function submitAdditionalQuestions(
+  projectId: number,
+  additionalQuestions: AdditionalQuestionItem[]
+): Promise<SubmitAdditionalQuestionsResponse> {
+  const response = await apiClient.patch<SubmitAdditionalQuestionsResponse>(
+    `/api/projects/${projectId}/additional-questions`,
+    {
+      additional_questions: additionalQuestions,
+    }
+  )
+  return response.data
+}
+

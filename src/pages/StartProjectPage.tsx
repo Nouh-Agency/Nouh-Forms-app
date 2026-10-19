@@ -17,10 +17,12 @@ import { useCreateClientMutation } from '../queries/useCreateClientMutation'
 import { useCreateProjectMutation } from '../queries/useCreateProjectMutation'
 import { fetchProjectQuestionnaire } from '../api/questionnaireApi'
 import { useSubmitQuestionnaireAnswersMutation } from '../queries/useSubmitQuestionnaireAnswersMutation'
+import { useSubmitAdditionalQuestionsMutation } from '../queries/useSubmitAdditionalQuestionsMutation'
 import type { CreateProjectPayload } from '../types/project.types'
 import type {
   QuestionnaireQuestion,
   QuestionnaireAnswerValue,
+  AdditionalQuestionItem,
 } from '../types/questionnaire.types'
 
 interface StartProjectPageProps {
@@ -61,6 +63,7 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
   const createClientMutation = useCreateClientMutation()
   const createProjectMutation = useCreateProjectMutation()
   const submitAnswersMutation = useSubmitQuestionnaireAnswersMutation()
+  const submitAdditionalQuestionsMutation = useSubmitAdditionalQuestionsMutation()
 
   const selectedDepartmentId =
     discipline === 'architecture' ? 1 : discipline === 'graphic' ? 2 : discipline === 'technology' ? 3 : 1
@@ -216,13 +219,25 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
   }
 
   const handleSubmitQuestionnaireAnswers = async (
-    formattedAnswers: Record<string, QuestionnaireAnswerValue>
+    formattedAnswers: Record<string, QuestionnaireAnswerValue>,
+    additionalQuestions: AdditionalQuestionItem[]
   ) => {
     if (!savedProject?.id) return
-    await submitAnswersMutation.mutateAsync({
-      projectId: savedProject.id,
-      answers: formattedAnswers,
-    })
+    const promises: Promise<unknown>[] = [
+      submitAnswersMutation.mutateAsync({
+        projectId: savedProject.id,
+        answers: formattedAnswers,
+      }),
+    ]
+    if (additionalQuestions.length > 0) {
+      promises.push(
+        submitAdditionalQuestionsMutation.mutateAsync({
+          projectId: savedProject.id,
+          additionalQuestions,
+        })
+      )
+    }
+    await Promise.all(promises)
   }
 
   const submitBrief = () => {

@@ -89,3 +89,18 @@ export interface SubmitQuestionnaireAnswersResponse {
   message?: string
   data?: unknown
 }
+
+export interface AdditionalQuestionItem {
+  question: string
+  answer: string | null
+}
+
+export interface SubmitAdditionalQuestionsPayload {
+  additional_questions: AdditionalQuestionItem[]
+}
+
+export interface SubmitAdditionalQuestionsResponse {
+  message?: string
+  data?: unknown
+}
+

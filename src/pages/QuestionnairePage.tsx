@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import type { QuestionnaireQuestion, QuestionnaireAnswerValue } from '../types/questionnaire.types'
+import type {
+  QuestionnaireQuestion,
+  QuestionnaireAnswerValue,
+  AdditionalQuestionItem,
+} from '../types/questionnaire.types'
 import { fetchProjectQuestionnaire } from '../api/questionnaireApi'
 import { useSubmitQuestionnaireAnswersMutation } from '../queries/useSubmitQuestionnaireAnswersMutation'
+import { useSubmitAdditionalQuestionsMutation } from '../queries/useSubmitAdditionalQuestionsMutation'
 import QuestionnaireStep from '../components/QuestionnaireStep'
 import { useWizard } from '../context/WizardContext'
 import { decodeProjectId, encodeProjectId } from '../utils/projectToken'
@@ -25,6 +30,7 @@ export default function QuestionnairePage() {
   const [isFinishedSuccessfully, setIsFinishedSuccessfully] = useState(false)
 
   const submitAnswersMutation = useSubmitQuestionnaireAnswersMutation()
+  const submitAdditionalQuestionsMutation = useSubmitAdditionalQuestionsMutation()
 
   useEffect(() => {
     if (paramProjectId) {
@@ -89,12 +95,26 @@ export default function QuestionnairePage() {
     }
   }
 
-  const handleFinish = async (formattedAnswers: Record<string, QuestionnaireAnswerValue>) => {
+  const handleFinish = async (
+    formattedAnswers: Record<string, QuestionnaireAnswerValue>,
+    additionalQuestions: AdditionalQuestionItem[]
+  ) => {
     if (!numProjectId) return
-    await submitAnswersMutation.mutateAsync({
-      projectId: numProjectId,
-      answers: formattedAnswers,
-    })
+    const promises: Promise<unknown>[] = [
+      submitAnswersMutation.mutateAsync({
+        projectId: numProjectId,
+        answers: formattedAnswers,
+      }),
+    ]
+    if (additionalQuestions.length > 0) {
+      promises.push(
+        submitAdditionalQuestionsMutation.mutateAsync({
+          projectId: numProjectId,
+          additionalQuestions,
+        })
+      )
+    }
+    await Promise.all(promises)
     setIsFinishedSuccessfully(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
