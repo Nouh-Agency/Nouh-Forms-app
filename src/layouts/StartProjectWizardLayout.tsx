@@ -12,6 +12,7 @@ import {
   getPrevStepPath,
 } from '../utils/wizardRoutes'
 import { useCreateClientMutation } from '../queries/useCreateClientMutation'
+import { useLogoutMutation } from '../queries/useLogoutMutation'
 import { decodeProjectId, encodeProjectId } from '../utils/projectToken'
 
 export default function StartProjectWizardLayout() {
@@ -39,6 +40,18 @@ export default function StartProjectWizardLayout() {
   } = useWizard()
 
   const createClientMutation = useCreateClientMutation()
+  const logoutMutation = useLogoutMutation()
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync()
+    } catch {
+    }
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    navigate('/login', { replace: true })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -288,19 +301,44 @@ export default function StartProjectWizardLayout() {
           </span>
         </div>
 
-        {isQuestionnaireRoute && (
+        <div className="pointer-events-auto flex items-center gap-3">
+          {isQuestionnaireRoute && (
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/start-project/summary')
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              className="inline-flex items-center gap-2.5 px-4 py-2 border border-white/20 hover:border-[#C5A059] text-white/70 hover:text-white bg-[#0b0b0b]/70 hover:bg-[#0b0b0b] transition-all cursor-pointer font-display text-[11px] tracking-wider uppercase backdrop-blur-md"
+            >
+              <ArrowLeftIcon className={`w-3.5 h-3.5 ${isRTL ? 'scale-x-[-1]' : ''}`} />
+              <span>{isRTL ? 'رجوع للملخص' : 'Back to Summary'}</span>
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={() => {
-              navigate('/start-project/summary')
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-            className="pointer-events-auto inline-flex items-center gap-2.5 px-4 py-2 border border-white/20 hover:border-[#C5A059] text-white/70 hover:text-white bg-[#0b0b0b]/70 hover:bg-[#0b0b0b] transition-all cursor-pointer font-display text-[11px] tracking-wider uppercase backdrop-blur-md"
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 border border-white/15 hover:border-red-500/40 text-white/70 hover:text-red-400 bg-[#0b0b0b]/70 hover:bg-red-500/10 transition-all cursor-pointer font-display text-[11px] tracking-wider uppercase backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowLeftIcon className={`w-3.5 h-3.5 ${isRTL ? 'scale-x-[-1]' : ''}`} />
-            <span>{isRTL ? 'رجوع للملخص' : 'Back to Summary'}</span>
+            <svg
+              className={`w-3.5 h-3.5 ${isRTL ? 'scale-x-[-1]' : ''}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span>{logoutMutation.isPending ? (isRTL ? 'جاري الخروج...' : 'Logging out...') : (isRTL ? 'تسجيل الخروج' : 'Logout')}</span>
           </button>
-        )}
+        </div>
       </header>
 
       {isDisciplineRoute ? (

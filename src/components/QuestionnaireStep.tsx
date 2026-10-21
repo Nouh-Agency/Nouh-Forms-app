@@ -26,6 +26,7 @@ interface CustomQuestion {
   id: string
   question: string
   answer: string
+  notes: string
 }
 
 interface QuestionnaireStepProps {
@@ -64,7 +65,7 @@ export default function QuestionnaireStep({
 
   const handleAddCustomQuestion = () => {
     const newId = `cq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
-    setCustomQuestions((prev) => [...prev, { id: newId, question: '', answer: '' }])
+    setCustomQuestions((prev) => [...prev, { id: newId, question: '', answer: '', notes: '' }])
   }
 
   const handleRemoveCustomQuestion = (id: string) => {
@@ -73,18 +74,23 @@ export default function QuestionnaireStep({
       const nextErrors = { ...prev }
       delete nextErrors[`q_${id}`]
       delete nextErrors[`a_${id}`]
+      delete nextErrors[`n_${id}`]
       return nextErrors
     })
   }
 
-  const handleUpdateCustomQuestion = (id: string, field: 'question' | 'answer', value: string) => {
+  const handleUpdateCustomQuestion = (
+    id: string,
+    field: 'question' | 'answer' | 'notes',
+    value: string
+  ) => {
     setCustomQuestions((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
     )
     if (value.trim()) {
       setCustomQuestionErrors((prev) => {
         const nextErrors = { ...prev }
-        delete nextErrors[`${field === 'question' ? 'q' : 'a'}_${id}`]
+        delete nextErrors[`${field === 'question' ? 'q' : field === 'answer' ? 'a' : 'n'}_${id}`]
         return nextErrors
       })
     }
@@ -711,7 +717,8 @@ export default function QuestionnaireStep({
     customQuestions.forEach((item) => {
       const hasQ = Boolean(item.question.trim())
       const hasA = Boolean(item.answer.trim())
-      if (!hasQ && hasA) {
+      const hasN = Boolean(item.notes.trim())
+      if (!hasQ && (hasA || hasN)) {
         cqErrors[`q_${item.id}`] = isRTL ? 'يرجى إدخال نص السؤال' : 'Please enter the question text'
       }
     })
@@ -839,6 +846,7 @@ export default function QuestionnaireStep({
       .map((item) => ({
         question: item.question.trim(),
         answer: item.answer.trim() ? item.answer.trim() : null,
+        notes: item.notes.trim() ? item.notes.trim() : null,
       }))
 
     try {
@@ -1502,6 +1510,19 @@ export default function QuestionnaireStep({
                               {customQuestionErrors[`a_${cq.id}`]}
                             </p>
                           )}
+                        </div>
+
+                        <div id={`custom-field-n_${cq.id}`} className="space-y-2">
+                          <label className="text-white/80 text-xs font-bold font-display block">
+                            {isRTL ? 'الملاحظة' : 'Note'}
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={cq.notes}
+                            onChange={(e) => handleUpdateCustomQuestion(cq.id, 'notes', e.target.value)}
+                            placeholder={isRTL ? 'أدخل نص الملاحظة هنا...' : 'Enter note text here...'}
+                            className="w-full bg-[#111111]/40 border border-white/15 focus:border-[#C5A059] p-3 text-white/90 outline-none transition-colors placeholder:text-white/20 font-display text-sm resize-y"
+                          />
                         </div>
                       </div>
                     ))}

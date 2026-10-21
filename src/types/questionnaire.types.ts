@@ -93,6 +93,7 @@ export interface SubmitQuestionnaireAnswersResponse {
 export interface AdditionalQuestionItem {
   question: string
   answer: string | null
+  notes?: string | null
 }
 
 export interface SubmitAdditionalQuestionsPayload {
