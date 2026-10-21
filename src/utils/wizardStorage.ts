@@ -17,6 +17,7 @@ export interface WizardStorageSchema {
   selectedCategory: ProjectCategory | null
   selectedProjectType: ProjectType | null
   selectedDesignStyle: DesignStyle | null
+  selectedDesignStyles?: DesignStyle[]
   savedProject: { id: number; name: string } | null
   savedProjectHash?: string
   questionnaireAnswers?: Record<number, string | string[]>
@@ -32,20 +33,26 @@ export function computeProjectSignature(
   clientInfo: ClientBasicInfo,
   selectedCategory: ProjectCategory | null,
   selectedProjectType: ProjectType | null,
-  selectedDesignStyle: DesignStyle | null,
+  selectedDesignStyles: DesignStyle[] | DesignStyle | null,
   answers: Record<string, string[]>
 ): string {
   const sortedAnswers = Object.keys(answers)
     .sort()
     .map((k) => `${k}:${(answers[k] ?? []).join(',')}`)
     .join('|')
+  const stylesArray = Array.isArray(selectedDesignStyles)
+    ? selectedDesignStyles
+    : selectedDesignStyles
+      ? [selectedDesignStyles]
+      : []
+  const styleIds = stylesArray.map((s) => s.id).sort().join(',')
   return [
     discipline ?? '',
     clientInfo.name.trim().toLowerCase(),
     clientInfo.note.trim(),
     selectedCategory?.id ?? '',
     selectedProjectType?.id ?? '',
-    selectedDesignStyle?.id ?? '',
+    styleIds,
     sortedAnswers,
   ].join('__')
 }

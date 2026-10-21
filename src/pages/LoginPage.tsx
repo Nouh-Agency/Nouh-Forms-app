@@ -116,21 +116,19 @@ export default function LoginPage() {
         }}
       />
 
-      <header className="relative z-10 w-full px-[5vw] py-6 flex items-center justify-between border-b border-white/[0.06]">
-        <div className="flex items-center gap-3">
+      <header className="relative z-10 w-full px-[5vw] py-5 flex items-center justify-between border-b border-white/[0.06]">
+        <div className="flex items-center gap-3 whitespace-nowrap">
           <img
             src="/logo.png"
             alt="Nouh Agency"
-            className="w-8 h-8 object-contain"
+            className="w-7 h-7 object-contain"
           />
-          <div className="flex flex-col">
-            <span className="text-[11px] tracking-[0.1em] text-[#C5A059] font-medium font-display uppercase">
-              NOUH AGENCY
-            </span>
-            <span className="text-[9px] tracking-[0.2em] text-white/35 font-display">
-              نظام استبيان المشاريع الهرمي
-            </span>
-          </div>
+          <span className="text-[13px] sm:text-[14px] tracking-[0.1em] text-white font-semibold font-display uppercase whitespace-nowrap">
+            NOUH AGENCY
+          </span>
+          <span className="hidden sm:inline text-[9px] tracking-[0.2em] text-white/35 font-display whitespace-nowrap">
+            نظام استبيان المشاريع الهرمي
+          </span>
         </div>
       </header>
 

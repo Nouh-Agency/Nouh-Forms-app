@@ -200,7 +200,7 @@ export function StartProjectPage({ onNavigateHome }: StartProjectPageProps) {
       department_id: selectedDepartmentId,
       project_category_id: selectedCategory?.id ?? 1,
       project_type_id: selectedProjectType?.id ?? 1,
-      design_style_id: selectedDesignStyle?.id ?? 1,
+      design_style_ids: selectedDesignStyle ? [selectedDesignStyle.id] : [],
       project_name: projectName,
       notes: clientInfo.note.trim() || 'ملاحظات المشروع',
     }

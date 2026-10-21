@@ -3,7 +3,7 @@ export interface CreateProjectPayload {
   department_id: number
   project_category_id: number
   project_type_id: number
-  design_style_id: number
+  design_style_ids: number[]
   project_name: string
   notes?: string
 }
@@ -14,7 +14,8 @@ export interface ProjectResponse {
   department_id: number
   project_category_id: number
   project_type_id: number
-  design_style_id: number
+  design_style_ids?: number[]
+  design_style_id?: number
   project_name: string
   notes?: string
   created_at?: string

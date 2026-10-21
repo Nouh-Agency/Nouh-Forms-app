@@ -20,7 +20,7 @@ export default function SummaryPage() {
     setCreatedClientId,
     selectedCategory,
     selectedProjectType,
-    selectedDesignStyle,
+    selectedDesignStyles,
     savedProject,
     setSavedProject,
     savedProjectHash,
@@ -68,7 +68,7 @@ export default function SummaryPage() {
       clientInfo,
       selectedCategory,
       selectedProjectType,
-      selectedDesignStyle,
+      selectedDesignStyles,
       answers
     )
 
@@ -102,7 +102,7 @@ export default function SummaryPage() {
       department_id: selectedDepartmentId,
       project_category_id: selectedCategory?.id ?? 1,
       project_type_id: selectedProjectType?.id ?? 1,
-      design_style_id: selectedDesignStyle?.id ?? 1,
+      design_style_ids: selectedDesignStyles.map((s) => s.id),
       project_name: projectName,
       notes: clientInfo.note.trim() || 'ملاحظات المشروع',
     }

@@ -8,7 +8,7 @@ export default function DesignStylePage() {
     discipline,
     answers,
     setAnswers,
-    setSelectedDesignStyle,
+    setSelectedDesignStyles,
     setHoveredImage,
   } = useWizard()
 
@@ -21,15 +21,22 @@ export default function DesignStylePage() {
     if (current.includes(optionValue)) {
       setAnswers((prev) => ({
         ...prev,
-        [question.id]: [],
+        [question.id]: current.filter((v) => v !== optionValue),
       }))
-      setSelectedDesignStyle(null)
+      if (style) {
+        setSelectedDesignStyles((prev) => prev.filter((s) => s.id !== style.id))
+      }
     } else {
       setAnswers((prev) => ({
         ...prev,
-        [question.id]: [optionValue],
+        [question.id]: [...current, optionValue],
       }))
-      setSelectedDesignStyle(style)
+      if (style) {
+        setSelectedDesignStyles((prev) => {
+          if (prev.some((s) => s.id === style.id)) return prev
+          return [...prev, style]
+        })
+      }
     }
   }
 

@@ -37,6 +37,8 @@ interface WizardContextType {
   setSelectedProjectType: Dispatch<SetStateAction<ProjectType | null>>
   selectedDesignStyle: DesignStyle | null
   setSelectedDesignStyle: Dispatch<SetStateAction<DesignStyle | null>>
+  selectedDesignStyles: DesignStyle[]
+  setSelectedDesignStyles: Dispatch<SetStateAction<DesignStyle[]>>
   savedProject: { id: number; name: string } | null
   setSavedProject: Dispatch<SetStateAction<{ id: number; name: string } | null>>
   savedProjectHash: string | undefined
@@ -98,9 +100,18 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [selectedProjectType, setSelectedProjectType] = useState<ProjectType | null>(
     () => initialData?.selectedProjectType ?? null
   )
-  const [selectedDesignStyle, setSelectedDesignStyle] = useState<DesignStyle | null>(
-    () => initialData?.selectedDesignStyle ?? null
+  const [selectedDesignStyles, setSelectedDesignStyles] = useState<DesignStyle[]>(
+    () =>
+      initialData?.selectedDesignStyles ??
+      (initialData?.selectedDesignStyle ? [initialData.selectedDesignStyle] : [])
   )
+  const selectedDesignStyle = selectedDesignStyles[0] ?? null
+  const setSelectedDesignStyle: Dispatch<SetStateAction<DesignStyle | null>> = (action) => {
+    setSelectedDesignStyles((prev) => {
+      const next = typeof action === 'function' ? action(prev[0] ?? null) : action
+      return next ? [next] : []
+    })
+  }
   const [savedProject, setSavedProject] = useState<{ id: number; name: string } | null>(
     () => initialData?.savedProject ?? null
   )
@@ -120,7 +131,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (newDiscipline !== discipline) {
       setSelectedCategory(null)
       setSelectedProjectType(null)
-      setSelectedDesignStyle(null)
+      setSelectedDesignStyles([])
       setSavedProject(null)
       setSavedProjectHash(undefined)
       setAnswers({})
@@ -144,7 +155,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         clientInfo,
         selectedCategory,
         selectedProjectType,
-        selectedDesignStyle,
+        selectedDesignStyles,
         answers
       )
       if (currentSignature !== savedProjectHash) {
@@ -157,7 +168,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     clientInfo,
     selectedCategory,
     selectedProjectType,
-    selectedDesignStyle,
+    selectedDesignStyles,
     answers,
     savedProject,
     savedProjectHash,
@@ -192,6 +203,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       selectedCategory,
       selectedProjectType,
       selectedDesignStyle,
+      selectedDesignStyles,
       savedProject,
       savedProjectHash,
       questionnaireAnswers,
@@ -205,7 +217,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     answers,
     selectedCategory,
     selectedProjectType,
-    selectedDesignStyle,
+    selectedDesignStyles,
     savedProject,
     savedProjectHash,
     questionnaireAnswers,
@@ -223,7 +235,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setAnswers({})
     setSelectedCategory(null)
     setSelectedProjectType(null)
-    setSelectedDesignStyle(null)
+    setSelectedDesignStyles([])
     setSavedProject(null)
     setSavedProjectHash(undefined)
     setQuestionnaireAnswers({})
@@ -242,7 +254,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setAnswers({})
     setSelectedCategory(null)
     setSelectedProjectType(null)
-    setSelectedDesignStyle(null)
+    setSelectedDesignStyles([])
     setSavedProject(null)
     setSavedProjectHash(undefined)
     setQuestionnaireAnswers({})
@@ -268,6 +280,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         setSelectedProjectType,
         selectedDesignStyle,
         setSelectedDesignStyle,
+        selectedDesignStyles,
+        setSelectedDesignStyles,
         savedProject,
         setSavedProject,
         savedProjectHash,

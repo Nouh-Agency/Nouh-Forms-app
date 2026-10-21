@@ -274,12 +274,11 @@ export const PROJECT_BRIEF_DISCIPLINES: BriefDisciplineConfig[] = [
         eyebrowAr: '04 / أنماط التصميم المعماري',
         title: 'CHOOSE ARCHITECTURAL STYLE',
         titleAr: 'الأنماط المعمارية',
-        description: 'Select your preferred visual direction (choose 1 style).',
-        descriptionAr: 'اختر النمط المناسب لذوقك ورؤيتك (اختر نمطاً واحداً فقط).',
+        description: 'Select your preferred visual directions.',
+        descriptionAr: 'اختر الأنماط المناسبة لذوقك ورؤيتك (يمكنك اختيار أكثر من نمط).',
         mode: 'image',
         columns: 3,
-        multi: false,
-        max: 1,
+        multi: true,
         options: [
           {
             label: 'MODERN STYLE',

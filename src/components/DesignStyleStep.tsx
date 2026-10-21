@@ -48,7 +48,14 @@ export default function DesignStyleStep({
         note: opt.note,
         noteAr: opt.noteAr,
         image: opt.image,
-        styleRef: null,
+        styleRef: {
+          id: idx + 1,
+          name: opt.labelAr,
+          description: opt.noteAr,
+          image: opt.image,
+          is_active: true,
+          sort_order: idx,
+        } as DesignStyle,
       }))
 
   return (
