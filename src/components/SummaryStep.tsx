@@ -52,44 +52,44 @@ export default function SummaryStep({
           </div>
           <h2
             className="text-white m-0 font-extrabold font-display"
-            style={{ fontSize: 'clamp(32px,4vw,62px)', lineHeight: 0.95, letterSpacing: '-0.02em' }}
+            style={{ fontSize: 'clamp(32px,4vw,62px)', lineHeight: 1.1, letterSpacing: '-0.02em' }}
           >
-            <span>{isRTL ? 'ملف العميل: ' : 'DOSSIER: '}</span>
-            <span className="text-[#C5A059] block sm:inline">{clientInfo.name || (isRTL ? 'عميل جديد' : 'New Client')}</span>
+            <span className="block">{isRTL ? 'ملف العميل:' : 'DOSSIER:'}</span>
+            <span className="text-[#C5A059] block mt-1.5">{clientInfo.name || (isRTL ? 'عميل جديد' : 'New Client')}</span>
           </h2>
 
-          <div className="mt-8 p-5 bg-[#0b0b0b] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <div className="text-white/30 text-[9px] tracking-[0.2em] font-display uppercase mb-1">
+          <div className="mt-8 p-5 bg-[#0b0b0b] border border-white/[0.08] divide-y divide-white/[0.06]">
+            <div className="py-3 first:pt-0 last:pb-0 grid grid-cols-[110px_1fr] sm:grid-cols-[140px_1fr] items-center gap-4">
+              <span className="text-white/35 text-[10px] tracking-[0.2em] font-display uppercase">
                 {isRTL ? 'الاسم' : 'NAME'}
-              </div>
-              <div className="text-white text-[13px] font-medium font-display">
+              </span>
+              <span className="text-white text-[13px] font-medium font-display">
                 {clientInfo.name || '—'}
-              </div>
+              </span>
             </div>
-            <div>
-              <div className="text-white/30 text-[9px] tracking-[0.2em] font-display uppercase mb-1">
+            <div className="py-3 first:pt-0 last:pb-0 grid grid-cols-[110px_1fr] sm:grid-cols-[140px_1fr] items-center gap-4">
+              <span className="text-white/35 text-[10px] tracking-[0.2em] font-display uppercase">
                 {isRTL ? 'رقم الهاتف' : 'PHONE'}
-              </div>
-              <div className="text-white text-[13px] font-medium font-display">
+              </span>
+              <span className="text-white text-[13px] font-medium font-display">
                 {clientInfo.phone || '—'}
-              </div>
+              </span>
             </div>
-            <div>
-              <div className="text-white/30 text-[9px] tracking-[0.2em] font-display uppercase mb-1">
+            <div className="py-3 first:pt-0 last:pb-0 grid grid-cols-[110px_1fr] sm:grid-cols-[140px_1fr] items-center gap-4">
+              <span className="text-white/35 text-[10px] tracking-[0.2em] font-display uppercase">
                 {isRTL ? 'البريد الإلكتروني' : 'EMAIL'}
-              </div>
-              <div className="text-white text-[13px] font-medium font-display truncate">
+              </span>
+              <span className="text-white text-[13px] font-medium font-display">
                 {clientInfo.email || '—'}
-              </div>
+              </span>
             </div>
-            <div>
-              <div className="text-white/30 text-[9px] tracking-[0.2em] font-display uppercase mb-1">
+            <div className="py-3 first:pt-0 last:pb-0 grid grid-cols-[110px_1fr] sm:grid-cols-[140px_1fr] items-center gap-4">
+              <span className="text-white/35 text-[10px] tracking-[0.2em] font-display uppercase">
                 {isRTL ? 'العنوان' : 'LOCATION'}
-              </div>
-              <div className="text-white text-[13px] font-medium font-display">
+              </span>
+              <span className="text-white text-[13px] font-medium font-display">
                 {clientInfo.address || '—'}
-              </div>
+              </span>
             </div>
           </div>
 

@@ -293,7 +293,7 @@ export default function StartProjectWizardLayout() {
             alt="Nouh Agency"
             className="w-7 h-7 object-contain"
           />
-          <span className="text-[10px] sm:text-[11px] tracking-[0.45em] text-[#C5A059] font-medium font-display uppercase whitespace-nowrap">
+          <span className="text-[10px] sm:text-[11px] tracking-[0.1em] text-[#C5A059] font-medium font-display uppercase whitespace-nowrap">
             NOUH AGENCY
           </span>
           <span className="hidden sm:inline text-[9px] tracking-[0.2em] text-white/35 font-display whitespace-nowrap">

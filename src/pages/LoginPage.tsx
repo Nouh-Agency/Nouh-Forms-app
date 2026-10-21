@@ -124,7 +124,7 @@ export default function LoginPage() {
             className="w-8 h-8 object-contain"
           />
           <div className="flex flex-col">
-            <span className="text-[11px] tracking-[0.45em] text-[#C5A059] font-medium font-display uppercase">
+            <span className="text-[11px] tracking-[0.1em] text-[#C5A059] font-medium font-display uppercase">
               NOUH AGENCY
             </span>
             <span className="text-[9px] tracking-[0.2em] text-white/35 font-display">
@@ -139,9 +139,7 @@ export default function LoginPage() {
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent" />
 
           <div className="mb-8 text-center">
-            <div className="inline-block text-[#C5A059] text-[10px] tracking-[0.45em] mb-2 uppercase font-display">
-              بوابة الدخول / AUTHENTICATION
-            </div>
+           
             <h1 className="text-white text-2xl sm:text-3xl font-extrabold font-display uppercase tracking-tight">
               تسجيل الدخول
             </h1>
